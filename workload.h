@@ -24,6 +24,9 @@ using namespace std;
 // #define RANDOM 0 (default)
 #define SEQUENTIAL 1
 
+extern std::unordered_map<unsigned long, uint8_t> accessCounter; 
+extern uint8_t totalAccess; 
+
 class Workload {
 private:
     // Params
@@ -41,9 +44,9 @@ private:
 
     Hashmap *hm;
     string workloadFile;
-    ulong *popOrder;
+    ulong *popOrder;//第i个键的key
     double *cumProb;
-    double cumsum;
+    double cumsum;//所有概率总和
     ulong cardinality = 0;
     ulong maxInsertedIdx = 0;
     ulong requestsIssued = 0;

@@ -1,4 +1,8 @@
 #include "workload.h"
+#include <chrono>
+#include<unordered_map>
+std::unordered_map<unsigned long, uint8_t> accessCounter; 
+uint8_t totalAccess = 0; 
 
 Workload::Workload(float zipf,
     ulong initialSize,
@@ -90,7 +94,6 @@ void Workload::printParams() {
 
 void Workload::run() {
     initHashmap();
-
     // Run
     HashmapReq *reqs = (HashmapReq*)malloc(sizeof(HashmapReq)*this->operationCount);
     if (!reqs) {
@@ -199,7 +202,7 @@ inline void Workload::initHashmap() {
         // The popularity order of keys is arbitrary
         this->_random_shuffle(popOrder, initialSize);
     }
-
+    //归一化过程后进行
     hm->bulkLoad(popOrder, initialSize);
     this->cardinality = initialSize;
     this->maxInsertedIdx = initialSize-1;
@@ -266,6 +269,8 @@ inline void Workload::_genFetchReq(HashmapReq *reqs, ulong i) {
     reqs[i].key = this->popOrder[high];
     reqs[i].value = this->_random();
     reqs[i].reqType = FETCH_REQ;
+    totalAccess += 1;
+    accessCounter[reqs[i].key] += 1;
 }
 
 inline void Workload::_genInsertReq(HashmapReq *reqs, ulong i) {
@@ -277,14 +282,14 @@ inline void Workload::_genInsertReq(HashmapReq *reqs, ulong i) {
     reqs[i].value = _random();
     reqs[i].reqType = INSERT_REQ;
     
-    ulong p = this->_random() % this->cardinality;
+    ulong p = this->cardinality-1;
     ulong buf;
-    while (cumProb[p]/cumsum < 0.9) {
-        buf = this->popOrder[p];
-        this->popOrder[p] = n;
-        n = buf;
-        p = this->_random() % (this->cardinality - 1 - p) + p + 1;
-    }
+    // while (cumProb[p]/cumsum < 0.9) {
+    //     buf = this->popOrder[p];
+    //     this->popOrder[p] = n;
+    //     n = buf;
+    //     p = this->_random() % (this->cardinality - 1 - p) + p + 1;
+    // }
     // For the last 10% keys, it doesn't matter. Just insert at the end.
     this->popOrder[this->cardinality] = n;
 

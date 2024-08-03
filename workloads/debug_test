@@ -1,0 +1,11 @@
+zipf=1
+initialSize=100000
+operationCount=5000000
+distShiftFreq=5000001
+distShiftPrct=0
+fetchProportion=0.98
+insertProportion=0.02
+deleteProportion=0
+storageEngine=ChainedHashing
+keyorder=random
+outputFile=output/read_mostly_default
