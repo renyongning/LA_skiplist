@@ -1,0 +1,2 @@
+- 接入了Btree，编译命令：make btree
+- 添加了测试结果文件test_performance.txt，测试命令 ./benchmark.out workloads/lm_test
