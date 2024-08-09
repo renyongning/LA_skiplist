@@ -19,6 +19,12 @@ skiplist: main.cpp workload.cpp workload.h metrics.cpp metrics.h competitors/ski
 ours: main.cpp workload.cpp workload.h metrics.cpp metrics.h competitors/ours.cpp competitors/ours.h storage_engine.cpp
 	$(CC) -DSKIPLIST $(USUAL)
 
+leveldb_skiplist: main.cpp workload.cpp workload.h metrics.cpp metrics.h competitors/leveldb_skiplist.cpp competitors/leveldb_skiplist.h storage_engine.cpp
+	$(CC) -DLEVELDBSKIPLIST $(USUAL) dependency/leveldb_skiplist/arena.cc
+
+btree: main.cpp workload.cpp workload.h metrics.cpp metrics.h competitors/btree.cpp competitors/btree.h storage_engine.cpp
+	$(CC) -DBTREE $(USUAL)
+
 clean:
 	rm -f *.o
 	rm -f *.out

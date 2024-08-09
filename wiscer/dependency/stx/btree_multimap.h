@@ -36,7 +36,7 @@
  * Contains the specialized B+ tree template class btree_multimap
  */
 
-#include <stx/btree.h>
+#include "btree.h"
 
 namespace stx {
 
@@ -339,16 +339,16 @@ public:
 
     /// Tries to locate a key in the B+ tree and returns an iterator to the
     /// key/data slot if found. If unsuccessful it returns end().
-    iterator find(const key_type& key)
+    iterator find(const key_type& key, ulong& displacement)
     {
-        return tree.find(key);
+        return tree.find(key, displacement);
     }
 
     /// Tries to locate a key in the B+ tree and returns an constant iterator
     /// to the key/data slot if found. If unsuccessful it returns end().
-    const_iterator find(const key_type& key) const
+    const_iterator find(const key_type& key, ulong& displacement) const
     {
-        return tree.find(key);
+        return tree.find(key, displacement);
     }
 
     /// Tries to locate a key in the B+ tree and returns the number of

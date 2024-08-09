@@ -21,3 +21,11 @@
 #ifdef OURS
 #include "ours.cpp"
 #endif
+
+#ifdef LEVELDBSKIPLIST
+#include "leveldb_skiplist.cpp"
+#endif
+
+#ifdef BTREE
+#include "btree.cpp"
+#endif

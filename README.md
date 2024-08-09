@@ -18,7 +18,7 @@
     即competitors/viphash.cpp
     用make viphash编译
 
-- 标准库map/红黑树
+- 标准库map，即红黑树
     即competitors/当中的stdmap.cpp
     用make stdmap编译
 
@@ -29,6 +29,14 @@
 - 学习增强跳表
     即competitors/当中的ours.cpp
     用make ours编译
+
+- Google LevelDB 底层的跳表实现
+    即competitors/当中的leveldb_skiplist.cpp
+    用make leveldb_skiplist编译
+
+- stx-btree，即B+树
+    即competitors/btee.cpp
+    用make btree编译
 
 编译成功后，用./benchmark workloads/{具体的工作负载名}进行测试
 

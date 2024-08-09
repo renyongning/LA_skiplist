@@ -1774,13 +1774,14 @@ public:
 
     /// Tries to locate a key in the B+ tree and returns an iterator to the
     /// key/data slot if found. If unsuccessful it returns end().
-    iterator find(const key_type& key)
+    iterator find(const key_type& key, ulong& displacement)
     {
         node* n = m_root;
         if (!n) return end();
 
         while (!n->isleafnode())
         {
+            displacement += 1;
             const inner_node* inner = static_cast<const inner_node*>(n);
             int slot = find_lower(inner, key);
 
@@ -1790,19 +1791,21 @@ public:
         leaf_node* leaf = static_cast<leaf_node*>(n);
 
         int slot = find_lower(leaf, key);
+        displacement += slot+1;
         return (slot < leaf->slotuse && key_equal(key, leaf->slotkey[slot]))
                ? iterator(leaf, slot) : end();
     }
 
     /// Tries to locate a key in the B+ tree and returns an constant iterator
     /// to the key/data slot if found. If unsuccessful it returns end().
-    const_iterator find(const key_type& key) const
+    const_iterator find(const key_type& key, ulong& displacement) const
     {
         const node* n = m_root;
         if (!n) return end();
 
         while (!n->isleafnode())
         {
+            displacement += 1;
             const inner_node* inner = static_cast<const inner_node*>(n);
             int slot = find_lower(inner, key);
 
@@ -1812,6 +1815,7 @@ public:
         const leaf_node* leaf = static_cast<const leaf_node*>(n);
 
         int slot = find_lower(leaf, key);
+        displacement += slot+1;
         return (slot < leaf->slotuse && key_equal(key, leaf->slotkey[slot]))
                ? const_iterator(leaf, slot) : end();
     }
