@@ -1,0 +1,5 @@
+- 修正了MakeFile中LA_skiplist部分的错误
+- 更新了workload.h与workload.cpp
+- 添加了测试结果文件test_performance.txt
+  - zipf=1使用命令：./benchmark.out workloads/zyk_test
+  - zipf=2使用命令：./benchmark.out workloads/lm_test
