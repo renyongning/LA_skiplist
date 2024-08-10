@@ -6,5 +6,5 @@ distShiftPrct=0
 fetchProportion=1
 insertProportion=0
 deleteProportion=0
-keyorder=sorted
+keyorder=random
 outputFile=output/MY_COSTUMED_OUTPUT
