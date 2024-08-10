@@ -1,5 +1,22 @@
 #include "workload.h"
 
+/*
+2024/8/7
+提供了负载变化前后的频率信息,负载变化时机
+*/
+
+std::unordered_map<ulong, ulong> accessCounter; 
+
+ulong totalAccess = 0;
+
+std::vector<std::unordered_map<ulong, double>> probs;
+
+std::vector<ulong> changeTimes;
+
+ulong currentTime=0;
+
+std::vector<std::vector<std::pair<ulong, double>>> sortedProbs;
+
 Workload::Workload(float zipf,
     ulong initialSize,
     ulong operationCount,
@@ -52,11 +69,12 @@ Workload::Workload(string filename) {
             this->deleteProportion = stof(val);
         } else if (strcmp(property, "keyPattern") == 0) {
             if (strcmp(val, "random") == 0) {
+                //this->keyPattern = SEQUENTIAL;
                 this->keyPattern = RANDOM;
             } else if (strcmp(val, "sequential") == 0) {
                 this->keyPattern = SEQUENTIAL;
             } else {
-                this->keyPattern = RANDOM;
+                this->keyPattern = SEQUENTIAL;
             }
         } else if (strcmp(property, "keyorder") == 0) {
             if (strcmp(val, "random") == 0) {
@@ -90,7 +108,6 @@ void Workload::printParams() {
 
 void Workload::run() {
     initHashmap();
-
     // Run
     HashmapReq *reqs = (HashmapReq*)malloc(sizeof(HashmapReq)*this->operationCount);
     if (!reqs) {
@@ -136,8 +153,47 @@ void Workload::run() {
         requestsIssued += 1;
         if (requestsIssued % distShiftFreq == 0) {
             this->_shiftDist();
-        }
+            std::unordered_map<ulong, double> currentProbs;
+            for (const auto& pair : accessCounter) {
+                currentProbs[pair.first] = static_cast<double>(pair.second) / totalAccess;
+            }
+            probs.push_back(currentProbs);
+            changeTimes.push_back(currentTime);
+            currentTime+=distShiftFreq;
+            accessCounter.clear();
+            totalAccess = 0;
+        }        
     }
+    // 检查是否有未统计的请求
+    if (totalAccess > 0) {
+        std::unordered_map<ulong, double> currentProbs;
+        for (const auto& pair : accessCounter) {
+            currentProbs[pair.first] = static_cast<double>(pair.second) / totalAccess;
+        }
+        probs.push_back(currentProbs);
+        changeTimes.push_back(currentTime);
+    }
+    //排序后的键
+    for (const auto& phaseProbs : probs) {
+        std::vector<std::pair<ulong, double>> sortedPhaseProbs(phaseProbs.begin(), phaseProbs.end());
+        
+        std::sort(sortedPhaseProbs.begin(), sortedPhaseProbs.end(), [](const std::pair<ulong, double>& a, const std::pair<ulong, double>& b) {
+            return a.second > b.second; // 按照概率值从大到小排序
+        });
+
+        sortedProbs.push_back(sortedPhaseProbs);
+    }
+    // 输出结果以验证
+    /*for (size_t i = 0; i < sortedProbs.size(); ++i) {
+        std::cout << "Phase " << i << ":\n";
+        for (const auto& pair : sortedProbs[i]) {
+            std::cout << "Key: " << pair.first << ", Probability: " << pair.second << "\n";
+        }
+    }*/
+    //为了使用统计的准确频率，将bulkload从inithashmap函数中放到后面
+    //将popOrder（可能被更改过）改为原始的originOrder
+    hm->bulkLoad(originOrder, initialSize);
+
     for (ulong i=0; i<numBatches; i++) {
         ulong batchSize = this->batchSize;
         if (i == numBatches - 1 && (this->operationCount % this->batchSize) > 0) {
@@ -170,12 +226,16 @@ inline void Workload::initHashmap() {
     this->_choosePrime();
 
     ulong finalSize = this->initialSize + this->insertProportion*operationCount + 1;
+
     popOrder = (ulong*)malloc(sizeof(ulong)*finalSize);
+    originOrder = (ulong*)malloc(sizeof(ulong)*finalSize);
+
     cumProb = (double*)malloc(sizeof(double)*finalSize);
     memset(cumProb, 0, sizeof(double)*finalSize);
     memset(popOrder, 0, sizeof(ulong)*finalSize);
 
     if (this->keyPattern == RANDOM) {
+        std::cout<<"random"<<std::endl;
         popOrder[0] = this->_multAddHash(0);
         cumProb[0] = 1/pow(1, this->zipf);
         cumsum = cumProb[0];
@@ -199,8 +259,11 @@ inline void Workload::initHashmap() {
         // The popularity order of keys is arbitrary
         this->_random_shuffle(popOrder, initialSize);
     }
-
-    hm->bulkLoad(popOrder, initialSize);
+    //for (ulong i=0; i<initialSize; i++) {originOrder[i]=popOrder[i];std::cout<<originOrder[i]<<" ";}
+    std::cout<<std::endl;
+    //归一化过程后进行
+    //为了使用统计的准确频率，将bulkload从inithashmap函数中放到后面
+    //hm->bulkLoad(popOrder, initialSize);
     this->cardinality = initialSize;
     this->maxInsertedIdx = initialSize-1;
     if (this->keyorder == RANDOM) {
@@ -208,6 +271,12 @@ inline void Workload::initHashmap() {
     } else if (this->keyorder == SORTED) {
         // key inserted at the end is in the most favorable spot
         this->_reverse(popOrder, initialSize);
+    }
+
+    for (ulong i=0; i<initialSize; i++)
+    {
+        originOrder[i]=popOrder[i];
+        //std::cout<<originOrder[i]<<" ";
     }
 }
 
@@ -266,6 +335,8 @@ inline void Workload::_genFetchReq(HashmapReq *reqs, ulong i) {
     reqs[i].key = this->popOrder[high];
     reqs[i].value = this->_random();
     reqs[i].reqType = FETCH_REQ;
+    totalAccess += 1;
+    accessCounter[reqs[i].key] += 1;
 }
 
 inline void Workload::_genInsertReq(HashmapReq *reqs, ulong i) {
@@ -277,14 +348,14 @@ inline void Workload::_genInsertReq(HashmapReq *reqs, ulong i) {
     reqs[i].value = _random();
     reqs[i].reqType = INSERT_REQ;
     
-    ulong p = this->_random() % this->cardinality;
+    ulong p = this->cardinality-1;
     ulong buf;
-    while (cumProb[p]/cumsum < 0.9) {
-        buf = this->popOrder[p];
-        this->popOrder[p] = n;
-        n = buf;
-        p = this->_random() % (this->cardinality - 1 - p) + p + 1;
-    }
+    // while (cumProb[p]/cumsum < 0.9) {
+    //     buf = this->popOrder[p];
+    //     this->popOrder[p] = n;
+    //     n = buf;
+    //     p = this->_random() % (this->cardinality - 1 - p) + p + 1;
+    // }
     // For the last 10% keys, it doesn't matter. Just insert at the end.
     this->popOrder[this->cardinality] = n;
 

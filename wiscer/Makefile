@@ -17,7 +17,7 @@ skiplist: main.cpp workload.cpp workload.h metrics.cpp metrics.h competitors/ski
 	$(CC) -DSKIPLIST $(USUAL)
 
 ours: main.cpp workload.cpp workload.h metrics.cpp metrics.h competitors/ours.cpp competitors/ours.h storage_engine.cpp
-	$(CC) -DSKIPLIST $(USUAL)
+	$(CC) -DOURS $(USUAL)
 
 leveldb_skiplist: main.cpp workload.cpp workload.h metrics.cpp metrics.h competitors/leveldb_skiplist.cpp competitors/leveldb_skiplist.h storage_engine.cpp
 	$(CC) -DLEVELDBSKIPLIST $(USUAL) dependency/leveldb_skiplist/arena.cc
