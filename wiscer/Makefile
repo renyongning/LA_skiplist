@@ -25,6 +25,9 @@ leveldb_skiplist: main.cpp workload.cpp workload.h metrics.cpp metrics.h competi
 btree: main.cpp workload.cpp workload.h metrics.cpp metrics.h competitors/btree.cpp competitors/btree.h storage_engine.cpp
 	$(CC) -DBTREE $(USUAL)
 
+robustsl: main.cpp workload.cpp workload.h metrics.cpp metrics.h competitors/robustsl.cpp competitors/robustsl.h storage_engine.cpp
+	$(CC) -DROBUSTSL $(USUAL)
+
 clean:
 	rm -f *.o
 	rm -f *.out

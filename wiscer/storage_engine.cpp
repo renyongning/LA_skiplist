@@ -29,3 +29,7 @@
 #ifdef BTREE
 #include "btree.cpp"
 #endif
+
+#ifdef ROBUSTSL
+#include "robustsl.cpp"
+#endif

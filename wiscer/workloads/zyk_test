@@ -1,7 +1,7 @@
-zipf=1
+zipf=2
 initialSize=10000
-operationCount=500000
-distShiftFreq=500001
+operationCount=5000000
+distShiftFreq=5000001
 distShiftPrct=0
 fetchProportion=1
 insertProportion=0
