@@ -306,9 +306,8 @@ V SkipList<K,V>::search(K key)
         while (current->forward[i] && current->forward[i]->get_key() <= key) {
             current = current->forward[i];
         }
-        V current_key = current->get_key();
-        if (current_key == key)
-            return current_key;
+        if (current->get_key() == key)
+            return current->get_value();
     }
     // current=current->forward[0];
     // if(current && current->get_key()==key)
