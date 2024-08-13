@@ -7,4 +7,3 @@ fetchProportion=1
 insertProportion=0
 deleteProportion=0
 storageEngine=VIPHashing
-outputFile=output/LA_insert

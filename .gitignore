@@ -1,8 +1,0 @@
-*.o
-*.out
-*.gch
-*output*
-*.txt
-*msr-tools*
-keys
-ops

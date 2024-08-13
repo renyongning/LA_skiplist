@@ -1,0 +1,1 @@
+**方便对数据结构进行debug,生成zipfian分布的数据后进行bulkload以及search**

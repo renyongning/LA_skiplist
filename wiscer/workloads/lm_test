@@ -1,0 +1,10 @@
+zipf=1.2
+initialSize=10000000
+operationCount=10000000
+distShiftFreq=500001
+distShiftPrct=0
+fetchProportion=1
+insertProportion=0
+deleteProportion=0
+keyorder=sorted
+outputFile=output/MY_COSTUMED_OUTPUT

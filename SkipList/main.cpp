@@ -1,29 +1,38 @@
 #include <iostream>
-//#include "Skiplist2.h"
+#include<cmath>
+#include<cstring>
 #include "LA_skiplist.h"
 #include<vector>
 #include<utility>
 using namespace std;
-
-int main() {
+static int initialsize=1000;
+static double alaph=1.1;
+#define SHOW 1
+#define SEARCH 1
+int main(int argc,char *argv[]) {
     SkipList<int,int> s;
-    vector<pair<pair<int,int>,double>> blukdata;
-    for(int i=0;i<1000;i++)
+    vector<pair<pair<int,int>,double>> blukdata(initialsize);
+    double cumsum =0;
+    for(int i=0;i<initialsize;i++)
     {
-        blukdata.push_back(pair<pair<int,int>,double>(pair<int,int>(i,i),i/1000.0));
-        //s.insert(i,i,1.0/10000);
+        blukdata[i] = pair<pair<int,int>,double>(pair<int,int>(i,i),1/pow(i+1,alaph));
+        cumsum+=blukdata[i].second;
+    }
+    for(int i=0;i<initialsize;i++)
+    {
+        blukdata[i].second /=cumsum;
     }
     s.bulkload(blukdata);
-    for(int i=1001;i<2000;i++)
+    if(SHOW)
+        s.display_list();
+    if(SEARCH)
     {
-        //s.insert(i,i,1.0/1000);
+        for(int i=0;i<1000;i++)
+        {
+            int res =s.search(i);
+            if(res)
+                cout<<"value:"<<res<<endl;
+        }
     }
-    s.display_list();
-    //for(int i=0;i<1001;i++)
-    //{
-        //int res =s.search(i);
-        //if(res)
-            //cout<<"value:"<<res<<endl;
-    //}
     cout<<"finish";
 }

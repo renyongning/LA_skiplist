@@ -1,13 +1,17 @@
 #include <cstdio>
 #include <cstdlib>
+#include<cstring>
 #include <stdlib.h>
 #include <time.h>
 #include <iostream>
 #include <string>
 #include <regex>
 #include <vector>
+#include<unordered_map>
+#include <algorithm>
 #include <fstream>
 #include <cmath>
+#include <chrono>
 #include "storage_engine.cpp"
 #include "metrics.h"
 
@@ -24,8 +28,10 @@ using namespace std;
 // #define RANDOM 0 (default)
 #define SEQUENTIAL 1
 
-extern std::unordered_map<unsigned long, uint8_t> accessCounter; 
-extern uint8_t totalAccess; 
+extern std::unordered_map<ulong, ulong> accessCounter; 
+extern ulong totalAccess; 
+extern std::vector<std::unordered_map<ulong, double>> probs;
+extern std::vector<ulong> changeTimes; 
 
 class Workload {
 private:
@@ -38,13 +44,14 @@ private:
     float fetchProportion = 1;
     float insertProportion = 0;
     float deleteProportion = 0;
-    int keyPattern = RANDOM;
+    int keyPattern = SEQUENTIAL;
     int keyorder = RANDOM;
     string outputFile = "output.txt";
 
     Hashmap *hm;
     string workloadFile;
     ulong *popOrder;//第i个键的key
+    ulong *originOrder;//原始版第i个键的key（没有被 _shiftDist()函数更改过的）
     double *cumProb;
     double cumsum;//所有概率总和
     ulong cardinality = 0;

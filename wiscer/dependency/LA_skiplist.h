@@ -341,9 +341,9 @@ V SkipList<K,V>::search(K key)
     Node<K,V> *current=_header;
     for(int i=_skip_list_level;i>=0;i--)
     {
-        while(current->forward[i]&&current->forward[i]->get_key()<=key)
+        while(current->forward[i]&&current->forward[i]->key<=key)
         {
-            if(current->forward[i]->value==key)
+            if(current->forward[i]->key==key)
             {
                 return current->forward[i]->value;
             }//找到目标节点后立刻退出
@@ -354,9 +354,9 @@ V SkipList<K,V>::search(K key)
     current = second_header;
     for (int i = second_skip_list_level; i >= 0; i--)
     {
-        while (current->forward[i] && current->forward[i]->get_key() <= key)
+        while (current->forward[i] && current->forward[i]->key <= key)
         {
-            if(current->forward[i]->value==key)
+            if(current->forward[i]->key==key)
             {
                 return current->forward[i]->value;
             }//找到目标节点后立刻退出
@@ -389,10 +389,11 @@ void SkipList<K,V>::bulkload(std::vector<std::pair<std::pair<K,V>,double>> vec)
     int random_level;
     int* skip_list_level;
     Node<K,V>*** level_current;//对_level_current或者_second_list_level_current的pointer
+    double boundary =double(1)/this->_element_count;
     for(int i=0;i<this->_element_count;i++)
     {
         
-        if(vec[i].second>=double(1)/this->_element_count)
+        if(vec[i].second>=boundary)//boundary
         {
             level_current =&_level_current;
             skip_list_level =&_skip_list_level;

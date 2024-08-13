@@ -1,0 +1,15 @@
+zipf = 1:
+Data Structure: Normal Skiplist
+Total time (us): 74446
+Net throughput: 6.71628 Mops/s
+Data Structure: Our Learning-Augmented Skiplist
+Total time (us): 80311
+Net throughput: 6.2258 Mops/s
+
+zipf = 2:
+Data Structure: Normal Skiplist
+Total time (us): 27199
+Net throughput: 18.383 Mops/s
+Data Structure: Our Learning-Augmented Skiplist
+Total time (us): 31802
+Net throughput: 15.7223 Mops/s
