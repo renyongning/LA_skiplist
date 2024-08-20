@@ -75,7 +75,7 @@ void Node<K,V>::set_p(double p)
 template<typename K,typename V>
 class SkipList{
 public:
-    SkipList(int =31);
+    SkipList(int =63);
     ~SkipList();
     int get_random_level(double p);
     Node<K,V>*create_node(K,V,int,double);
@@ -92,7 +92,12 @@ public:
     {
         return std::pair<int,int>(this->first_skiplist_number,this->second_skiplist_number);
     }//返回两个链表的数量
-    void bulkload(std::vector<std::pair<std::pair<K,V>,double>>);
+    bool is_empty()
+    {
+        if(this->_element_count==0) return false;
+        return true;
+    }
+    bool bulkload(std::vector<std::pair<std::pair<K,V>,double>>);
 private:
     void get_key_value_from_string(const std::string &str,std::string*key,std::string *value);
     bool is_valid_string(const std::string &str);
@@ -123,13 +128,12 @@ template<typename K,typename V>
 int SkipList<K,V>::insert(const K key,const  V value,double p)
 {
     //mtx.lock();
-    std::srand(time(NULL));
     Node<K,V> *update[_max_level];
     Node<K,V> *current;
     Node<K,V>*header;
     int *num;
     int* skip_list_level;
-    if(p>=double(1)/this->_element_count)
+    if(p>=1/(double)((uint64_t(1)<<this->_max_level)))
     {
         current =this->_header;
         header =this->_header;
@@ -143,20 +147,19 @@ int SkipList<K,V>::insert(const K key,const  V value,double p)
         num =&second_skiplsit_number;
         skip_list_level =&second_skip_list_level;
     }//选择插入哪一个跳表
-    memset(update,0,sizeof(Node<K,V>*)*(_max_level+1));
+    memset(update,0,sizeof(Node<K,V>*)*(_max_level));
     //99-113行-为查找key是否在跳表中出现，也可以直接调用search_element(K key)
     for(int i=*skip_list_level;i>=0;i--)
     {
-        while(current->forward[i]!=NULL&&current->forward[i]->get_key()<key)//同一层级的下一个指针不为空并且值小于查询值
+        while(current->forward[i]!=NULL&&current->forward[i]->get_key()<=key)//同一层级的下一个指针不为空并且值小于查询值
         {
             current=current->forward[i];
         }
         update[i]=current;   //update是存储每一层需要插入点节点的位置
     }
-    current=current->forward[0];
     if(current!=NULL&&current->get_key()==key)
     {
-        std::cout<<"key:"<<key<<",exists"<<std::endl;
+        //std::cout<<"key:"<<key<<",exists"<<std::endl;
         //mtx.unlock();
         return 1;
     }
@@ -343,7 +346,7 @@ V SkipList<K,V>::search(K key)
     {
         while(current->forward[i]&&current->forward[i]->get_key()<=key)
         {
-            if(current->forward[i]->value==key)
+            if(current->forward[i]->key==key)
             {
                 return current->forward[i]->value;
             }//找到目标节点后立刻退出
@@ -377,8 +380,9 @@ template<typename K,typename V>
 /*
     装载函数
 */
-void SkipList<K,V>::bulkload(std::vector<std::pair<std::pair<K,V>,double>> vec)
+bool SkipList<K,V>::bulkload(std::vector<std::pair<std::pair<K,V>,double>> vec)
 {
+    if(is_empty()) return false;
     std::srand(time(NULL));
     this->_element_count =vec.size();
     Node<K,V>** _level_current =new Node<K,V>*[_max_level+1];//得到每一层当前的最后一个元素(初始为header)
@@ -417,6 +421,7 @@ void SkipList<K,V>::bulkload(std::vector<std::pair<std::pair<K,V>,double>> vec)
     }
     delete[] _level_current;
     delete[] _second_list_level_curent;
+    return true;
 }
 template<typename K,typename V>
 
@@ -430,6 +435,7 @@ SkipList<K,V>::SkipList(int max_level)
     V v;
     this->_header=new Node<K,V>(k,v,_max_level,0);//头节点在最高层级
     this->second_header =new Node<K,V>(k,v,_max_level,0);//下方普通链表的头节点
+    std::srand(time(NULL));
 };
 //释放内存，关闭_file_writer  _file_reader
 template<typename K,typename V>
@@ -467,12 +473,13 @@ SkipList<K,V>::~SkipList()
 template<typename K,typename V>
 int SkipList<K,V>::get_random_level(double p)
 {
-    int level = 0;
-    double target = ((((uint64_t)1<<level)-1)/float(_element_count));
+    int level = 1;
+    uint64_t n =uint64_t(1)<<this->_max_level;
+    double target = (((uint64_t)1<<(level-1))/double(n));
     while ((std::rand()%2||(p>=target)) && level < _max_level)
     {
         level += 1;
-        target =((((uint64_t)1<<level)-1)/float(_element_count));
+        target =((((uint64_t)1<<level)-1)/double(n));
     }
         
     level=(level<_max_level)?level:_max_level;

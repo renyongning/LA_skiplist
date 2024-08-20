@@ -23,9 +23,13 @@ void LAskiplist::bulkLoad(ulong *keys, ulong num_keys) {
         //blukdata.push_back(pair<pair<ulong,ulong>,double>(pair<ulong,ulong>(keys[i],_random()),1/num_keys));
         
     }
-
-    skiplist.bulkload(blukdata);
+    for(int i=0;i<num_keys;i++)
+    {
+        skiplist.insert(blukdata[i].first.first,blukdata[i].first.second,blukdata[i].second);
+    }
+    //skiplist.bulkload(blukdata);
     this->cardinality = num_keys;
+    skiplist.display_list();
 }
 void LAskiplist::printlist()
 {

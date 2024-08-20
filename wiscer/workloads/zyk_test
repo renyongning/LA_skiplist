@@ -1,4 +1,4 @@
-zipf=1
+zipf=1.5
 initialSize=10000
 operationCount=500000
 distShiftFreq=500001

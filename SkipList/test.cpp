@@ -4,10 +4,8 @@
 using namespace std;
 int main()
 {
-
-    srand(time(NULL));
-    for (int j = 0; j < 5; j++)
+    for(int i=0;i<100;i++)
     {
-        cout <<((uint64_t)1>>j) << endl;
+        cout<<random()<<endl;
     }
 }

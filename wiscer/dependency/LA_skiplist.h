@@ -143,7 +143,7 @@ int SkipList<K,V>::insert(const K key,const  V value,double p)
         num =&second_skiplsit_number;
         skip_list_level =&second_skip_list_level;
     }//选择插入哪一个跳表
-    memset(update,0,sizeof(Node<K,V>*)*(_max_level+1));
+    memset(update,0,sizeof(Node<K,V>*)*(_max_level));
     //99-113行-为查找key是否在跳表中出现，也可以直接调用search_element(K key)
     for(int i=*skip_list_level;i>=0;i--)
     {
