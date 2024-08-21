@@ -476,16 +476,27 @@ SkipList<K, V>::SkipList(int max_level, double theta, double p) {
 
     // 此处暂时不能保证极端情况的正确性
     _D[0] = std::ceil(log_theta_divided_by_log_p);
-    // std::cout << "_D[0]= " << _D[0] << std::endl;
+    std::cout << "_D[0]= " << _D[0] << std::endl;
     for (int i = 1; i < 32; i ++)
     {
         double tmp = std::ceil(log_theta_divided_by_log_p * (1u << i));
         _D[i] = tmp < _max_level ? tmp : _max_level;
-        // std::cout << "_D[" << i << "]= " << _D[i] << std::endl;
+        std::cout << "_D[" << i << "]= " << _D[i] << std::endl;
     }
 
     _K = std::ceil(std::log2(std::log2(_n)) - std::log2(2 * std::log2(_theta) / std::log2(_p)));
     // std::cout << "_K= " << _K << std::endl;
+
+    unsigned _n_threshold[32] = {0};
+
+    _n_threshold[0] = 1 / _theta;
+    std::cout << "_n_threshold[0]= " << _n_threshold[0] << std::endl;
+    for (int i = 1; i < 32; i ++)
+    {
+        unsigned tmp = _n_threshold[i - 1] + std::pow(1 / _theta, 1u << i);
+        _n_threshold[i] = tmp < 0xffffffff ? tmp : 0xffffffff;
+        std::cout << "_n_threshold[" << i << "]= " << _n_threshold[i] << std::endl;
+    }
 };
 
 template<typename K, typename V> 

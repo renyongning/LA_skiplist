@@ -28,6 +28,9 @@ btree: main.cpp workload.cpp workload.h metrics.cpp metrics.h competitors/btree.
 robustsl: main.cpp workload.cpp workload.h metrics.cpp metrics.h competitors/robustsl.cpp competitors/robustsl.h storage_engine.cpp
 	$(CC) -DROBUSTSL $(USUAL)
 
+dnrobustsl: main.cpp workload.cpp workload.h metrics.cpp metrics.h competitors/dynamic_robustsl.cpp competitors/dynamic_robustsl.h storage_engine.cpp
+	$(CC) -DDNROBUSTSL $(USUAL)
+
 clean:
 	rm -f *.o
 	rm -f *.out

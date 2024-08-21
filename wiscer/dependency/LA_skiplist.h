@@ -304,19 +304,21 @@ V SkipList<K,V>::search(K key)
     Node<K,V> *current=_header;
     for (int i = _skip_list_level; i >= 0; i--) {
         while (current->forward[i] && current->forward[i]->get_key() <= key) {
+            if (current->forward[i]->get_key() == key)
+                return current->forward[i]->get_value();
             current = current->forward[i];
         }
-        if (current->get_key() == key)
-            return current->get_value();
     }
+    // if (current->get_key() == key)
+    //     return current->get_value();
     // current=current->forward[0];
     // if(current && current->get_key()==key)
     // {
     //     //std::cout<<"Found key:"<<key<<",value:"<<current->get_value()<<std::endl;
     //     return current->get_value();
     // }
-    // //std::cout<<"Not Found Key:"<<key<<std::endl;
-    // return NULL;
+    //std::cout<<"Not Found Key:"<<key<<std::endl;
+    return NULL;
 }
 template<typename K,typename V>
 void init_vec(Node<K,V>*** nodevc,Node<K,V>* source,int length)

@@ -33,3 +33,7 @@
 #ifdef ROBUSTSL
 #include "robustsl.cpp"
 #endif
+
+#ifdef DNROBUSTSL
+#include "dynamic_robustsl.cpp"
+#endif
