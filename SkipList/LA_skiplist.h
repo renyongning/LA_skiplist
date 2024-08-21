@@ -10,7 +10,7 @@
 #include<random>
 #include<time.h>
 #define STORE_FILE "store/dumpFile"
-
+static uint32_t MAX_LEVEL;
 //std::mutex mtx;  //代表互斥锁 ，保持线程同步
 std::string delimiter=":";  //存放到STORE_FILE中时，将delimiter也存入进文件中，用于get_key_value_from_string的key与value区分
 template<typename K,typename V>
@@ -41,8 +41,8 @@ Node<K,V>::Node(const K k, const V v, int level,double p)
     this->value=v;
     this->p =p;
     this->node_level=level;
-    this->forward=new Node<K,V> *[level+1];//level从0开始，+1得到储存包
-    memset(this->forward,0,sizeof(Node<K,V>*)*(level+1));
+    this->forward=new Node<K,V> *[MAX_LEVEL+1];//level从0开始，+1得到储存包
+    memset(this->forward,0,sizeof(Node<K,V>*)*(MAX_LEVEL+1));
 };
 template<typename  K,typename V>
 Node<K,V>::~Node()
@@ -80,6 +80,8 @@ public:
     int get_random_level(double p);
     Node<K,V>*create_node(K,V,int,double);
     int insert(K,V,double);
+    int insert2(K,V,double);//与get_random_level2构成第二种插入方案
+    int get_random_level2(double p);
     void display_list();
     void delete_element(K);
     V search(K);
@@ -101,6 +103,7 @@ public:
 private:
     void get_key_value_from_string(const std::string &str,std::string*key,std::string *value);
     bool is_valid_string(const std::string &str);
+    uint64_t findTableSizeof2(const uint64_t target);//得到一个数向下舍入后的二的平方数
 private:
     int _max_level;              //跳表的最大层级，从0开始
     int _skip_list_level;        //当前跳表的有效层级
@@ -109,9 +112,11 @@ private:
     Node<K,V>* second_header;//第二个普通跳表的头节点
     std::ofstream _file_writer;  //默认以输入(writer)方式打开文件。
     std::ifstream _file_reader;  //默认以输出(reader)方式打开文件。
-    int _element_count;          //表示跳表中元素的数量
-    int first_skiplist_numnber;//第一个跳表中的元素数量
-    int second_skiplsit_number;//第二个跳表中的元素数量
+    uint64_t _element_count;          //表示跳表中元素的数量
+    uint64_t first_skiplist_numnber;//第一个跳表中的元素数量
+    uint64_t second_skiplsit_number;//第二个跳表中的元素数
+    friend class Node<K,V>;
+    
 };
 
 //create_node函数：根据给定的键、值和层级创建一个新节点，并返回该节点的指针
@@ -131,7 +136,7 @@ int SkipList<K,V>::insert(const K key,const  V value,double p)
     Node<K,V> *update[_max_level];
     Node<K,V> *current;
     Node<K,V>*header;
-    int *num;
+    uint64_t *num;
     int* skip_list_level;
     if(p>=1/(double)((uint64_t(1)<<this->_max_level)))
     {
@@ -189,7 +194,119 @@ int SkipList<K,V>::insert(const K key,const  V value,double p)
     //mtx.unlock();
     return 0;
 }
-
+//insert2:实现第二种动态插入的方法(这个策略对于多线程不友好)
+template<typename K,typename V>
+int SkipList<K,V>::insert2(K key,V value,double p)
+{
+    Node<K,V> *update[_max_level];
+    Node<K,V> *current;
+    Node<K,V>*header;
+    uint64_t *num;
+    int* skip_list_level;
+    if(p>=0)
+    {
+        current =this->_header;
+        header =this->_header;
+        num =&first_skiplist_numnber;
+        skip_list_level =&_skip_list_level;
+    }
+    else
+    {
+        current = this->second_header;
+        header =this->second_header;
+        num =&second_skiplsit_number;
+        skip_list_level =&second_skip_list_level;
+    }//选择插入哪一个跳表(目前来看这两种方法都无法正常在insert中实现A2方法)
+    memset(update,0,sizeof(Node<K,V>*)*(_max_level));
+    //99-113行-为查找key是否在跳表中出现，也可以直接调用search_element(K key)
+    for(int i=*skip_list_level;i>=0;i--)
+    {
+        while(current->forward[i]!=NULL&&current->forward[i]->get_key()<=key)//同一层级的下一个指针不为空并且值小于查询值
+        {
+            current=current->forward[i];
+        }
+        update[i]=current;   //update是存储每一层需要插入点节点的位置
+    }
+    if(current!=NULL&&current->get_key()==key)
+    {
+        //std::cout<<"key:"<<key<<",exists"<<std::endl;
+        //mtx.unlock();
+        return 1;
+    }
+    this->_element_count++;//先增加数量
+    if(!(this->_element_count&(this->_element_count-1)))//如果增加数量后达到二的n次方，则将跳表中现有的元素全部层数+1
+    {
+        Node<K,V>** record = new Node<K,V>*[this->_max_level+1];//用于记录第i层目前遍历到的最新节点
+        init_vec(&record,header,this->_max_level+1);//初始化为头指针
+        while(record[0])
+        {
+            if(record[0]->node_level<_max_level)
+            {
+                record[0]->node_level++;//增加节点层数
+                if(record[0]->node_level>*skip_list_level)
+                {
+                    *skip_list_level = record[0]->node_level;
+                }
+                //当前节点的新增加层是目前追踪的这个层次节点的下一个
+                record[0]->forward[record[0]->node_level] =record[record[0]->node_level]->forward[record[0]->node_level];
+                //当前层次追踪的节点的下一个更新为当前节点
+                record[record[0]->node_level]->forward[record[0]->node_level] = record[0];
+                //更新record中node_level~1的位置为当前节点,record0为下一个节点
+                for(int j=record[0]->node_level;j>0;j--)
+                {
+                    record[j] =record[0];
+                }
+                record[0] =record[0]->forward[0];               
+            }//如果目前层次小于最高层则进行提升
+            else
+            {
+                record[0] =record[0]->forward[0];
+            }//如果层次已经占满则更新record0为下一个节点
+        }//顺序遍历所有节点(包括头节点)并作出提升操作
+        delete[] record;
+        //接下来需要实现更新update的方法(目前就是再search一遍，但是可以优化？)
+        if(p>=0)
+        {
+            current =this->_header;
+        }
+        else
+        {
+            current = this->second_header;
+        }//选择插入哪一个跳表(目前来看这两种方法都无法正常在insert中实现A2方法)
+        memset(update,0,sizeof(Node<K,V>*)*(_max_level));
+        //99-113行-为查找key是否在跳表中出现，也可以直接调用search_element(K key)
+        for(int i=*skip_list_level;i>=0;i--)
+        {
+            while(current->forward[i]!=NULL&&current->forward[i]->get_key()<=key)//同一层级的下一个指针不为空并且值小于查询值
+            {
+                current=current->forward[i];
+            }
+            update[i]=current;   //update是存储每一层需要插入点节点的位置
+        }
+    }
+    //执行正常的插入操作
+    if(current==NULL||current->get_key()!=key)
+    {
+        int random_level=get_random_level2(p);
+        if(random_level>*skip_list_level)
+        {
+            for(int i=*skip_list_level+1;i<random_level+1;i++)
+            {
+                update[i]=header;
+            }
+            *skip_list_level=random_level;
+        }
+        Node<K,V>*inserted_node= create_node(key,value,random_level,p);
+        for(int i=0;i<=random_level;i++)
+        {
+            inserted_node->forward[i]=update[i]->forward[i];  //跟链表的插入元素操作一样
+            update[i]->forward[i]=inserted_node;
+        }
+        //std::cout<<"Successfully inserted key:"<<key<<",value:"<<value<<std::endl;
+        (*num)++;
+    }
+    return 0;
+}
 //display_list函数：输出跳表包含的内容、循环_skip_list_level(有效层级)、从_header头节点开始、结束后指向下一节点
 template<typename K,typename V>
 void SkipList<K,V>::display_list()
@@ -408,7 +525,7 @@ bool SkipList<K,V>::bulkload(std::vector<std::pair<std::pair<K,V>,double>> vec)
         }//选择插入哪一个跳表
         random_level =get_random_level(vec[i].second);
         new_node =new Node<K,V>(vec[i].first.first,vec[i].first.second,random_level,vec[i].second);
-        memset(new_node->forward,0,sizeof(Node<K, V>**)*(random_level+1));
+        //memset(new_node->forward,0,sizeof(Node<K, V>**)*(random_level+1));
         if(*skip_list_level<random_level)
         {
             *skip_list_level=random_level;
@@ -428,6 +545,7 @@ template<typename K,typename V>
 SkipList<K,V>::SkipList(int max_level)
 {
     this->_max_level=max_level;
+    MAX_LEVEL =max_level;
     this->_skip_list_level=0;
     this->second_skip_list_level =0;
     this->_element_count=0;
@@ -469,6 +587,19 @@ SkipList<K,V>::~SkipList()
     delete _header;
     delete second_header;
 }
+template<typename K,typename V>
+uint64_t SkipList<K,V>::findTableSizeof2(const uint64_t target)
+{
+    uint64_t temp = target -1;
+    temp |= temp >> 1;
+    temp |= temp >> 2;
+    temp |= temp >> 4;
+    temp |= temp >> 8;
+    temp |= temp >> 16;
+    temp |=temp >>32;
+    temp+=1;
+    return !(target&(target-1))?target:temp>>1;
+}
 //生成一个随机层级。从第一层开始，每一层以 50% 的概率加入
 template<typename K,typename V>
 int SkipList<K,V>::get_random_level(double p)
@@ -484,5 +615,20 @@ int SkipList<K,V>::get_random_level(double p)
         
     level=(level<_max_level)?level:_max_level;
     return level;
-};
+}
+template<typename K,typename V>
+int SkipList<K,V>::get_random_level2(double p)
+{
+    int level =1;
+    uint64_t n =findTableSizeof2(_element_count);//得到向下舍入的二的平方数
+    double target = (((uint64_t)1<<(level-1))/double(_element_count));
+    while ((std::rand()%2||(p>=target)) && level < _max_level)
+    {
+        level += 1;
+        target =((((uint64_t)1<<level)-1)/double(n));
+    }
+        
+    level=(level<_max_level)?level:_max_level;
+    return level;
+}
 #endif

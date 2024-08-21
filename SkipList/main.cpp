@@ -18,7 +18,7 @@ int main(int argc,char *argv[]) {
     double cumsum =0;
     for(int i=0;i<initialsize;i++)
     {
-        blukdata[i] = pair<pair<int,int>,double>(pair<int,int>(i,i),1/pow(i+1,alaph));
+        blukdata[i] = pair<pair<int,int>,double>(pair<int,int>(i,i),1/pow(initialsize-i,alaph));
         cumsum+=blukdata[i].second;
     }
     for(int i=0;i<initialsize;i++)
@@ -29,7 +29,7 @@ int main(int argc,char *argv[]) {
     {
         for(int i=0;i<initialsize;i++)
         {
-            s.insert(blukdata[i].first.first,blukdata[i].first.second,blukdata[i].second);
+            s.insert2(blukdata[i].first.first,blukdata[i].first.second,blukdata[i].second);
         }
     }
     if(BULKLOAD)
