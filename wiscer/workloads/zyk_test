@@ -1,10 +1,10 @@
-zipf=1
-initialSize=10000
-operationCount=500000
-distShiftFreq=500001
+zipf=2
+initialSize=1000
+operationCount=50000
+distShiftFreq=50001
 distShiftPrct=0
 fetchProportion=1
 insertProportion=0
 deleteProportion=0
-keyorder=sorted
+keyorder=random
 outputFile=output/MY_COSTUMED_OUTPUT

@@ -313,23 +313,29 @@ void SkipList<K,V>::bulkload(std::vector<std::pair<std::pair<K,V>,double>> vec)
 template<typename K,typename V>
 V SkipList<K,V>::search_element(K key)
 {
-    //std::cout<<"search_element------------"<<std::endl;
-    Node<K,V> *current=_header;
-    for(int i=_skip_list_level;i>=0;i--)
-    {
-        while(current->forward[i]&&current->forward[i]->get_key()<key)
-        {
-            current=current->forward[i];
+    // std::cout << "search_element-----------------" << std::endl;
+    Node<K, V> *current = _header;
+
+    // start from highest level of skip list
+    for (int i = _skip_list_level; i >= 0; i--) {
+        while (current->forward[i] && current->forward[i]->get_key() <= key) {
+            current = current->forward[i];
         }
+        if (current->get_key() == key)
+            return current->get_value();
     }
-    current=current->forward[0];
-    if(current and current->get_key()==key)
-    {
-        //std::cout<<"Found key:"<<key<<",value:"<<current->get_value()<<std::endl;
-        return current->get_value();
-    }
-    //std::cout<<"Not Found Key:"<<key<<std::endl;
-    return NULL;
+
+    // //reached level 0 and advance pointer to right node, which we search
+    // current = current->forward[0];
+
+    // // if current node have key equal to searched key, we get it
+    // if (current and current->get_key() == key) {
+    //     // std::cout << "Found key: " << key << ", value: " << current->get_value() << std::endl;
+    //     return current->get_value();
+    // }
+
+    std::cout << "Not Found Key:" << key << std::endl;
+    return 0;
 }
 template<typename K,typename V>
 
