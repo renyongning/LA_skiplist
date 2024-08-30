@@ -31,7 +31,7 @@ public:
     void set_value(V);
     void set_p(double);
     Node <K,V> **forward;  //forward是指针数组，用于指向下一层 例如  forward[0]是指向第一层，forward[1]指向上一层
-    Block <K,V> ** forward_blocks;
+    Block <K,V> ** forward_blocks; //forward_blocks[0]代表第一层中由该node打头的Block,以此类推,范围为 0 ~ node_level-2,即不包含本层的Block信息
     int node_level;//所在的层次
 private:
      K key;
