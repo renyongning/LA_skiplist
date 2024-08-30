@@ -1,473 +1,587 @@
-#include <iostream>
-#include <vector>
-#include <stack>
-#include <random>
-#include <limits.h>
-#include <time.h>
-#include <chrono>
-#include <numeric>   // For std::accumulate
-#include <algorithm> // For std::min_element and std::max_element
-using namespace std;
+#ifndef SKIPLISTPRO_SKIPLIST_H
+#define SKIPLISTPRO_SKIPLIST_H
+#include<iostream>
+#include<cmath>
+#include<cstring>
+#include<mutex>
+#include<fstream>
+#include<vector>
+#include<utility>
+#include<random>
+#include<time.h>
+#define STORE_FILE "store/dumpFile"
+
+//std::mutex mtx;  //代表互斥锁 ，保持线程同步
+std::string delimiter=":";  //存放到STORE_FILE中时，将delimiter也存入进文件中，用于get_key_value_from_string的key与value区分
+std::mt19937 generator(std::random_device{}());
+std::uniform_int_distribution<int> distribution(0, 99);
+
+template<typename K,typename V>
 class Block;
 
-class Node
-{
+template<typename K,typename V>
+class Node{
 public:
-    ulong key;
-    ulong value;
-    Block *down; // Pointer to lower level block contains same value
-    Node(ulong key, ulong value, Block *down)
-    {
-        this->key = key;
-        this->value = value;
-        this->down = down;
-    }
+    Node(){}
+    Node(K k,V v,int,double);
+    ~Node();
+    K get_key() const;
+    V get_value() const;
+    double get_p();
+    void set_value(V);
+    void set_p(double);
+    Node <K,V> **forward;  //forward是指针数组，用于指向下一层 例如  forward[0]是指向第一层，forward[1]指向上一层
+    Block <K,V> ** forward_blocks;
+    int node_level;//所在的层次
+private:
+     K key;
+     V value;
+     double p;
 };
 
+template<typename K,typename V>
 class Block
 {
-public:
-    std::vector<Node*> vector;
+    public:
+    std::vector<Node<K,V> *> nodes;
     Block *next; // Pointer to the next block at the same level
-    Block(Node* node, Block *next)
+    int block_level;//block所在的层次
+    Block(Node<K,V> *node, Block *next)
     {
-        vector.push_back(node);
+        nodes.push_back(node);
         // vector.resize(3); // minimum size of each block
         this->next = next;
     }
-
-    Block(std::vector<Node*> vector, Block *next)
+    Block(Node<K,V> *node,int level ,Block *next)
     {
-        this->vector = vector;
+        nodes.push_back(node);
+        this->block_level=level;
+        this->next = next;
+    }
+    Block(std::vector<Node<K,V> *> vector, Block *next)
+    {
+        this->nodes = vector;
         // vector.resize(3); // minimum size of each block
         this->next = next;
     }
 
     void print()
     {
-        for (unsigned int i = 0; i < vector.size(); i++)
+        for (unsigned int i = 0; i < nodes.size(); i++)
         {
-            std::cout << vector[i]->key;
-            if (vector[i]->down)
-                std::cout << "(" << vector[i]->down->vector[0]->key << ")";
+            std::cout << nodes[i]->get_value();
+            if (nodes[i]->node_level)
+                std::cout << "(" << nodes[i]->node_level << ")";
             std::cout << " ";
         }
         std::cout << "| ";
     }
 };
-
-class BSkipList
+template<typename K,typename V>
+Node<K,V>::Node(const K k, const V v, int level,double p)
 {
-private:
-    int max_level;
-    int element_count;
-    std::vector<double> p_thresholds;
-    std::vector<Block *> levels; // Vector of head blocks from each level
-    std::stack<Block *> getBlockStack(ulong key)
-    {
-        int lvl = levels.size() - 1;
-        Block *current = levels[levels.size() - 1]; // starting from first block in higest level
-        std::stack<Block *> blocks;                 // store the path
-        Block *block = current;                     // keep track the place for value
-        Node *prev;
-        while (current)
-        {
-            bool found = false;
-            // find a value greater than insert value
-            for (unsigned int i = 0; i < current->vector.size(); i++)
-            {
-                if (key > current->vector[i]->key)
-                { // go to next node
-                    prev = current->vector[i];
-                }
-                else
-                { // find the place
-                    blocks.push((block));
-                    current = prev->down;
-                    lvl--;
-                    block = current;
-                    found = true;
-                    break;
-                }
-            }
-
-            if (!found)
-            {
-                // keep looking in next block
-                if (current->next)
-                {
-                    current = current->next;
-                    // last in current block
-                    if (key < current->vector[0]->key)
-                    {
-                        blocks.push(block);
-                        current = prev->down;
-                    }
-                }
-                else // last in this level
-                    blocks.push(current);
-                current = prev->down;
-            }
-            block = current;
-        }
-        return blocks;
-    }
-
+    this->key=k;
+    this->value=v;
+    this->p =p;
+    this->node_level=level;
+    this->forward=new Node<K,V> *[level+1];//level从0开始，+1得到储存包
+    memset(this->forward,0,sizeof(Node<K,V>*)*(level+1));
+    this->forward_blocks=new Block<K,V> *[level+1];
+    memset(this->forward_blocks,0,sizeof(Block<K,V>*)*(level+1));
+};
+template<typename  K,typename V>
+Node<K,V>::~Node()
+{
+    delete []forward;
+    delete []forward_blocks;
+};
+template<typename K,typename V>
+K Node<K,V>::get_key() const {
+    return key;
+};
+template<typename K,typename V>
+V Node<K,V>::get_value() const {
+    return value;
+};
+template<typename K,typename V>
+double Node<K,V>::get_p()
+{
+    return p;
+}
+template<typename K,typename V>
+void Node<K,V>::set_value(V value)
+{
+    this->value=value;
+};
+template<typename K,typename V>
+void Node<K,V>::set_p(double p)
+{
+    this->p =p;
+}
+template<typename K,typename V>
+class SkipList{
 public:
-    int r = 1;
-    const float P_FACTOR = 0.25;
-   
-    // const int MAX_LEVEL = 32;
-    // const float P_FACTOR = 0.25;
-    // static std::random_device rd; // obtain a random number from hardware
-    // static std::mt19937 gen(rand()); // seed the generator
-    // static std::uniform_real_distribution<> distr(0, 1); // define the range
-    BSkipList(int max_level = 31)
-    {
-        this->max_level = max_level;
-        this->element_count = 0;
-        Block *block = new Block(new Node(0, 0, nullptr), nullptr); // negative infinity block
-        levels.push_back(block);
-    }
+    SkipList(int =31);
+    ~SkipList();
+    int get_random_level(double p);
+    Node<K,V>*create_node(K,V,int,double);
+    int insert(K,V,double);
+    void display_list();
+    void display_blocks();
+    void delete_element(K);
+    V search(K);
+    void dump_file();
+    void load_file();
+    void rehash(std::vector<std::pair<std::pair<K,V>,double>>);//根据新的概率分布重构
+    void rehash();//针对当前的分布重构
+    int size();
+    void bulkload(std::vector<std::pair<std::pair<K,V>,double>>);
+private:
+    void get_key_value_from_string(const std::string &str,std::string*key,std::string *value);
+    bool is_valid_string(const std::string &str);
+private:
+    int _max_level;              //跳表的最大层级，从0开始
+    int _skip_list_level;        //当前跳表的有效层级
+    Node<K,V> *_header;          //表示跳表的头节点
+    //Block<K,V> *_block_header;   //表示block的头节点，初始仅包含_header
+    std::ofstream _file_writer;  //默认以输入(writer)方式打开文件。
+    std::ifstream _file_reader;  //默认以输出(reader)方式打开文件。
+    int _element_count;          //表示跳表中元素的数量
 
-    ~BSkipList()
-    {
-        // Destructor to free memory
-        // ... (cleanup logic here)
-    }
+    std::vector<double> p_thresholds; // p_thresholds[i]表示将一个节点提升至level_i的阈值
+};
 
-    void insert(ulong key, ulong value)
-    {
-        srand(time(NULL)); // initialize random seed
-        std::stack<Block *> blocks = getBlockStack(key);
-        Block *lower = nullptr;
-        // building block from botton
-        while (!blocks.empty())
-        {
-            bool inserted = false;
-            Block *block = blocks.top();
-            blocks.pop();
-            for (unsigned int i = 0; i < block->vector.size(); i++)
+//create_node函数：根据给定的键、值和层级创建一个新节点，并返回该节点的指针
+template<typename K,typename V>
+Node<K,V> *SkipList<K,V>::create_node(const K k, const V v, int level,double p)
+{
+    Node<K,V>*n=new Node<K,V>(k,v,level,p);
+    return n;
+}
+// 插入节点并分割 Block
+template<typename K,typename V>
+Block<K, V> *insert_and_divide(Block<K, V> *target, Node<K, V> *inserted_node) {
+        std::vector<Node<K, V> *> left_nodes;
+        std::vector<Node<K, V> *> right_nodes;
+
+        // 遍历 target 的 nodes，将其分为两部分
+        for (auto node : target->nodes) {
+            if (node->get_key() < inserted_node->get_key()) {
+                left_nodes.push_back(node);
+            } else
             {
-                if (block->vector[i]->key > key)
-                { // in the middle of the vector
-                    // (static_cast<float>(rand()) / RAND_MAX) < P_FACTOR)
-                    if (r % 2 != 0)
-                    { // tail
-                        r = r + rand();
-                        block->vector.insert(block->vector.begin() + i, new Node(key, value, lower));
-                        return;
-                    }
-                    else
-                    { // head
-                        r++;
-                        // split and shrink block
-                        std::vector<Node *> right;
-                        right.push_back(new Node(key, value, lower));
-                        for (unsigned int j = i; j < block->vector.size(); j++)
-                            right.push_back(block->vector[j]);
-                        block->vector.resize(i);
-                        Block *rightBlock = new Block(right, block->next);
-                        block->next = rightBlock;
-                        // new level
-                        if (blocks.empty())
-                        {
-                            Block *up = new Block(new Node(0, 0, block), nullptr);
-                            up->vector.push_back(new Node(key, value, block->next));
-                            levels.push_back(up);
-                        }
-                        inserted = true;
-                        lower = block->next;
-                        break;
-                    }
-                }
-            }
-            if (!inserted)
-            {
-                // at the end of the vector
-                if (r % 2 != 0)
-                { // tail
-                    r = r + 1;
-                    block->vector.push_back(new Node(key, value, lower));
-                    return;
-                }
-                else
-                { // head
-                    r = r + rand();
-                    Block *newBlock = new Block(new Node(key, value, lower), block->next);
-                    block->next = newBlock;
-                    // new level
-                    if (blocks.empty())
-                    {
-                        Block *up = new Block(new Node(0, 0, block), nullptr);
-                        up->vector.push_back(new Node(key, value, newBlock));
-                        levels.push_back(up);
-                    }
-                    lower = newBlock;
-                }
-            }
-        }
-    }
-
-    void remove(ulong key)
-    {
-        std::stack<Block*> blocks = getBlockStack(key);
-        Block *current;
-        Block *block;
-        vector<Block*> update;
-        Block *curr = nullptr;
-        bool flag = false;
-        for (int i = levels.size() - 1; i >= 0; i--)
-        {
-            Block *pre = nullptr;
-            curr = levels[i];
-            while (curr)
-            {
-                for (int j = 0; j < curr->vector.size(); j++)
-                {
-                    if (curr->vector[j]->key == key)
-                    {
-                        if (pre)
-                        {
-                            flag = true;
-                            update.push_back(pre);
-                            // cout << pre->vector[0]->value << "pre" << endl;
-                        }
-                        break;
-                    }
-                }
-                if (flag)
-                {
-                    flag = false;
-                    break;
-                }
-
-                pre = curr;
-                curr = curr->next;
+                right_nodes.push_back(node);
             }
         }
 
-        // for (int i = 0; i < update.size(); i++)
-        // {
-        //     cout << update[i]->vector[0]->value << "update" << endl;
-        //     if (update[i]->next)
-        //     {
-        //         cout << update[i]->next->vector[0]->value << "update next" << endl;
-        //         if(update[i]->next->vector.size() > 1){
-        //             cout << update[i]->next->vector[1]->value << "test" << endl;
-        //         }
-        //     }
-        // }
-        int x = 0;
-        while (!blocks.empty())
+        right_nodes.insert(right_nodes.begin(), inserted_node);
+
+        // 将 left_nodes 赋值给 target 的 nodes
+        target->nodes = left_nodes;
+
+        // 创建一个新的 Block，将 right_nodes 赋值给新的 Block，并返回
+        Block<K, V> *new_block = new Block<K, V>(right_nodes, target->next);
+
+        // 更新 target 的 next 指针
+        target->next = new_block;
+        new_block->block_level=target->block_level;
+        return new_block;
+}
+//insert_element 函数：插入一个新的键值对到跳表中。通过遍历跳表，找到插入位置，并根据随机层级创建节点。
+//如果键已存在，则返回 1，表示插入失败；否则，插入成功，返回 0。
+template<typename K,typename V>
+int SkipList<K,V>::insert(const K key,const  V value,double p)
+{
+    //mtx.lock();
+    std::srand(time(NULL));
+    Node<K,V> *update[_max_level];
+    Block<K,V> *update_blocks[_max_level];
+    Node<K,V> *current=this->_header;
+    memset(update,0,sizeof(Node<K,V>*)*(_max_level+1));
+    memset(update_blocks,0,sizeof(Block<K,V>*)*(_max_level+1));
+    //99-113行-为查找key是否在跳表中出现，也可以直接调用search_element(K key)
+    update_blocks[_skip_list_level]=_header->forward_blocks[_skip_list_level];
+    for(int i=_skip_list_level;i>=0;i--)
+    {
+        while(current->forward[i]!=NULL&&current->forward[i]->get_key()<key)//同一层级的下一个指针不为空并且值小于查询值
         {
-            block = blocks.top();
-            blocks.pop();
+            current=current->forward[i];
+        }
+        update[i]=current;   //update是存储每一层需要插入点节点的位置
 
-            for (unsigned int i = 0; i < block->vector.size(); i++)
-            {
-                if (block->vector[i]->key == key)
-                {
-                    Block *downBlock = block->vector[i]->down;
-                    block->vector.erase(block->vector.begin() + i);
-
-                    while (downBlock != nullptr)
-                    {
-                        current = downBlock->vector[0]->down;
-                        downBlock->vector.erase(downBlock->vector.begin());
-                        if (!downBlock->vector.empty())
-                        {
-                            update[x]->vector.insert(update[x]->vector.end(), downBlock->vector.begin(), downBlock->vector.end());
-                            update[x]->next = update[x]->next->next;
-                            x++;
-                        }
-                        else
-                        {
-                            update[x]->next = update[x]->next->next;
-                            x++;
-                        }
-
-                        downBlock = current;
-                    }
-                }
-            }
+        if(i>0)
+        {
+            update_blocks[i-1]=current->forward_blocks[i-1];
         }
     }
-
-    void print_list()
+    current=current->forward[0];
+    if(current!=NULL&&current->get_key()==key)
     {
-        Block* curr;
-        for (int i = levels.size() - 1; i >= 0; i--)
-        {
-            Block *pre = nullptr;
-            curr = levels[i];
-            while (curr)
-            {
-                for (int j = 0; j < curr->vector.size(); j++)
-                {
-
-                    cout << curr->vector[j]->key << " ";
-                    if (curr->vector[j]->down)
-                    {
-                        cout << "(" << curr->vector[j]->down->vector[0]->key << ")";
-                    }
-                }
-                curr = curr->next;
-                cout << "|";
-            }
-            cout << " " << endl;
-        }
+        std::cout<<"key:"<<key<<",exists"<<std::endl;
+        //mtx.unlock();
+        return 1;
     }
 
-    std::vector<int> getAverageSize()
+    //添加的值没有在跳表中
+    if(current==NULL||current->get_key()!=key)
     {
-        Block* curr;
-        vector<int> sizes;
-        for (int i = levels.size() - 1; i >= 0; i--)
+        int random_level=get_random_level(p)+1;
+        //int random_level=1;
+        if(random_level>_skip_list_level)
         {
-            Block *pre = nullptr;
-            curr = levels[i];
-            while (curr)
+            for(int i=_skip_list_level+1;i<random_level+1;i++)
             {
-                sizes.push_back(curr->vector.size());
-                curr = curr->next;
+                update[i]=_header;
+                update_blocks[i]=_header->forward_blocks[i];
+            }
+            _skip_list_level=random_level;
+            //random_level=_skip_list_level;
+        }
+        Node<K,V>*inserted_node= create_node(key,value,random_level,p);
+        for(int i=0;i<random_level;i++)
+        {
+            inserted_node->forward[i]=update[i]->forward[i];  //跟链表的插入元素操作一样
+            update[i]->forward[i]=inserted_node;
+
+            if(i<random_level-1)
+            {
+                inserted_node->forward_blocks[i]=insert_and_divide(update_blocks[i],inserted_node);
+            }
+            else if(i==random_level-1)
+            {
+                // 在最高层级（random_level-1），将节点插入到 nodes 中,不用分裂
+               
+                auto it = update_blocks[i]->nodes.begin();
+                while (it != update_blocks[i]->nodes.end() && (*it)->get_key() < inserted_node->get_key()) {
+                    ++it;
+                }
+                // 使用迭代器插入节点
+                update_blocks[i]->nodes.insert(it, inserted_node);
             }
         }
-        return sizes;
+        //std::cout<<"Successfully inserted key:"<<key<<",value:"<<value<<std::endl;
+        _element_count++;
     }
+    //mtx.unlock();
+    return 0;
+}
 
-    ulong search(ulong key)
+//display_list函数：输出跳表包含的内容、循环_skip_list_level(有效层级)、从_header头节点开始、结束后指向下一节点
+template<typename K,typename V>
+void SkipList<K,V>::display_list()
+{
+    std::cout<<"\n*****SkipList*****"<<"\n";
+    for(int i=0;i<=_skip_list_level;i++)
     {
-        std::vector<Node *>::iterator it;
-        Node *node;
-        Node *prev_node;
-        Block *block = levels[levels.size() - 1];
-
-        while (block)
+        Node<K,V>*node=this->_header->forward[i];
+        std::cout<<"Level"<<i<<":   ";
+        while(node!=NULL)
         {
-            for (it = block->vector.begin(); it != block->vector.end(); ++it)
-            {
-                node = *it;
-                if (node->key < key)
-                {
-                    prev_node = node;
-                    if (node == *std::prev(block->vector.end()))
-                    {
-                        block = block->next;
-                        break;
-                    }
-                    else
-                    {
-                        continue;
-                    }
-                }
-                else if (node->key == key)
-                {
-                    return node->value;
-                }
-                else if (key < node->key)
-                {
-                    block = prev_node->down;
-                    break;
-                }
-                // else if (i == 0) {return false;}
-            }
+            //std::cout<<node->get_key()<<":"<<node->get_value()<<";";
+            std::cout<<node->get_key()<<";";
+            node=node->forward[i];
         }
-        // }
-        // std::cout << "Not Found Key:" << key << std::endl;
-        return 0;
+        std::cout<<std::endl;
     }
+}
 
-    std::vector<bool> range_query(ulong start_key, ulong end_key)
-    {
-        std::vector<bool> output;
-        for (ulong key = start_key; key < end_key; key++)
-        {
-            ulong value = search(key);
-            if (value != 0)
-            {
-                output.push_back(value);
-            }
-        }
-        return output;
-    }
-
-    void bulkload(std::vector<std::pair<std::pair<ulong,ulong>,double>> vec)
-    {
-        std::srand(time(NULL));
-        this->element_count = vec.size();
-        std::vector<Block*> level_current(max_level + 1, nullptr);
+template<typename K, typename V>
+void SkipList<K, V>::display_blocks()
+{
+    std::cout << "\n*****Block Structure of SkipList*****\n";
+    for (int i = 0; i <= _skip_list_level; i++) {
+        std::cout << "Level " << i << ":   ";
         
-        for(int i=0; i<=max_level; i++)
-        {
-            double p_threshold = ((1ul << i) - 1.0) / element_count;
-            p_thresholds.push_back(p_threshold);
-        }
+        // 获取level i的第一个block
+        Block<K, V> *block = this->_header->forward_blocks[i];
 
-        for(int i=0; i<this->element_count; i++)
-        {
-            double p = vec[i].second;
-            int level = get_random_level(p);
-
-            Block *lower = nullptr;
-            // insert nodes from the bottom to the "level" layer
-            for(int j=0; j<=level; j++)
-            {
-                Node* new_node = new Node(vec[i].first.first, vec[i].first.second, lower);
-                // the current layer is empty
-                if(level_current[j] == nullptr)
-                {
-                    level_current[j] = new Block(new Node(0, 0, nullptr), nullptr); 
-                    if(j==0)
-                        levels.push_back(level_current[j]);
-                    else if(levels.size() <= j)
-                        levels.push_back(new Block(new Node(0, 0, nullptr), nullptr));
+        while (block != nullptr) {
+            std::cout << "[";
+            for (size_t j = 0; j < block->nodes.size(); j++) {
+                std::cout << block->nodes[j]->get_key();
+                if (j < block->nodes.size() - 1) {
+                    std::cout << ", "; // 分隔每个节点的key
                 }
+            }
+            std::cout << "]";
+            
+            // 移动到下一个block
+            block = block->next;
 
-                // level_current[j]->vector.push_back(new_node);
-                // check if there's need to split
-                if (r % 2 != 0)
-                    { // tail
-                        r = r + rand();
-                        level_current[j]->vector.push_back(new_node);
-                    }
-                    else
-                    { // head
-                        r++;
-                        // split and shrink block
-                        std::vector<Node *> right;
-                        right.push_back(new_node);
-                        // for (unsigned int j = i; j < level_current[j]->vector.size(); j++)
-                        //     right.push_back(level_current[j]->vector[j]);
-                        // block->vector.resize(i);
-                        Block *rightBlock = new Block(right, level_current[j]->next);
-                        level_current[j]->next = rightBlock;
-                        // new level
-                       
-                            Block *up = new Block(new Node(0, 0, level_current[j]), nullptr);
-                            up->vector.push_back(new Node(vec[i].first.first, vec[i].first.second, level_current[j]->next));
-                            levels.push_back(up);
-                    
-                        lower = level_current[j]->next;
-                    }
+            if (block != nullptr) {
+                std::cout << " -> "; // 分隔每个block
+            }
+        }
+        std::cout << std::endl;
+    }
+}
+
+//dump_file 函数：将跳跃表的内容持久化到文件中。遍历跳跃表的每个节点，将键值对写入文件。
+//其主要作用就是将跳表中的信息存储到STORE_FILE文件中，node指向forward[0]，每一次结束后再将node指向node.forward[0]。
+template<typename K,typename V>
+void SkipList<K,V>::dump_file()
+{
+    std::cout<<"dump_file-----------"<<std::endl;
+    _file_writer.open(STORE_FILE);
+    Node<K,V>*node=this->_header->forward[0];
+    while(node!=NULL)
+    {
+        _file_writer<<node->get_key()<<":"<<node->get_value()<<"\n";
+        std::cout<<node->get_key()<<":"<<node->get_value()<<"\n";
+        node=node->forward[0];
+    }
+    _file_writer.flush();  //设置写入文件缓冲区函数
+    _file_writer.close();
+    return ;
+}
+
+//将文件中的内容转到跳表中、每一行对应的是一组数据，数据中有：分隔，还需要get_key_value_from_string(line,key,value)将key和value分开。
+//直到key和value为空时结束，每组数据分开key、value后通过insert_element()存到跳表中来
+template<typename K,typename V>
+void SkipList<K,V>::load_file()
+{
+    _file_reader.open(STORE_FILE);
+    std::cout<<"load_file----------"<<std::endl;
+    std::string line;
+    std::string *key=new std::string();
+    std::string *value=new std::string();
+    while(getline(_file_reader,line))
+    {
+        get_key_value_from_string(line,key,value);
+        if(key->empty()||value->empty())
+        {
+            continue;
+        }
+        int target=0;
+        std::string str_key=*key;   //当时定义的key为int类型，所以将得到的string类型的 key转成int
+        for(int i=0;i<str_key.size();i++)
+        {
+            target=target*10+str_key[i]-'0';
+        }
+        int Yes_No=insert(target,*value);
+        std::cout<<"key:"<<*key<<"value:"<<*value<<std::endl;
+    }
+    _file_reader.close();
+}
+
+//表示跳表中元素的数量
+template<typename K,typename V>
+int SkipList<K,V>::size() {
+    return _element_count;
+}
+
+//从STORE_FILE文件读取时，每一行将key和value用 ：分开，此函数将每行的key和value分割存入跳表中
+template<typename K,typename V>
+void SkipList<K,V>::get_key_value_from_string(const std::string &str, std::string *key, std::string *value)
+{
+    if(!is_valid_string(str)) return ;
+    *key=str.substr(0,str.find(delimiter));
+    *value=str.substr(str.find(delimiter)+1,str.length());
+}
+
+//判断从get_key_value_from_string函数中分割的字符串是否正确
+template<typename K,typename V>
+bool SkipList<K,V>::is_valid_string(const std::string &str)
+{
+    if(str.empty())
+    {
+        return false;
+    }
+    if(str.find(delimiter)==std::string::npos)
+    {
+        return false;
+    }
+    return true;
+}
+
+//遍历跳表找到每一层需要删除的节点，将前驱指针往前更新，遍历每一层时，都需要找到对应的位置
+//前驱指针更新完，还需要将全为0的层删除
+template<typename K,typename V>
+void SkipList<K,V>::delete_element(K key)
+{
+    //mtx.lock();
+    Node<K,V>*current=this->_header;
+    Node<K,V>*update[_max_level+1];
+    memset(update,0,sizeof(Node<K,V>*)*(_max_level+1));
+    for(int i=_skip_list_level;i>=0;i--)
+    {
+        while(current->forward[i]!=NULL&&current->forward[i]->get_key()<key)
+        {
+            current=current->forward[i];
+        }
+        update[i]=current;
+    }
+    current=current->forward[0];
+    if(current!=NULL&&current->get_key()==key)
+    {
+        for(int i=0;i<=_skip_list_level;i++) {
+            if (update[i]->forward[i] != current) {
+                break;
+            }
+            update[i]->forward[i] = current->forward[i];
+        }
+            while(_skip_list_level>0&&_header->forward[_skip_list_level]==0)
+            {
+                _skip_list_level--;
+            }
+            std::cout<<"Successfully deleted key"<<key<<std::endl;
+            _element_count--;
+    }
+    //mtx.unlock();
+    return ;
+}
+
+//遍历每一层，从顶层开始，找到每层对应的位置，然后进入下一层开始查找，直到查找到对应的key
+//如果找到return true 输出Found  否则 return false ，输出Not Found
+template<typename K,typename V>
+V SkipList<K,V>::search(K key)
+{
+    //std::cout<<"search_element------------"<<std::endl;
+    Node<K,V> *current=_header;
+    for (int i = _skip_list_level; i >= 0; i--) {
+        while (current->forward[i] && current->forward[i]->get_key() <= key) {
+            if (current->forward[i]->get_key() == key)
+                return current->forward[i]->get_value();
+            current = current->forward[i];
+        }
+    }
+
+    std::cout<<"not find key="<<key<<std::endl;
+    return NULL;
+}
+template<typename K,typename V>
+void init_vec(Node<K,V>*** nodevc,Node<K,V>* source,int length)
+{
+    for(int k=0;k<length;k++)
+    {
+        (*nodevc)[k] =source;
+    }
+}
+
+/*template<typename K,typename V>
+void init_block(Block<K,V>*** nodevc,Block<K,V>* source,int length)
+{
+    for(int k=0;k<length;k++)
+    {
+        (*nodevc)[k] =source;
+    }
+}*/
+
+template<typename K,typename V>
+/*
+    装载函数
+*/
+void SkipList<K,V>::bulkload(std::vector<std::pair<std::pair<K,V>,double>> vec)
+{
+    std::srand(time(NULL));
+    this->_element_count =vec.size();
+
+    for (int i = 0; i <= _max_level; i ++)
+    {
+        double p_threshold = ((1ul << i) - 1.0) / _element_count;
+        p_thresholds.push_back(p_threshold);
+        // std::cout << i << " : " << p_threshold << std::endl;
+    }
+
+    Node<K,V>** level_current =new Node<K,V>*[_max_level+1];//得到每一层当前的最后一个元素(初始为header)
+    Block<K,V>** current_blocks=new Block<K,V>*[_max_level+1];
+    int i=0;
+    Node<K,V>* new_node;
+    Block<K,V>* new_block;
+    int random_level;
+    init_vec(&level_current,this->_header,_max_level+1);
+    //init_block(&current_blocks,this->_block_header,_max_level+1);
+    for(int i=0;i<=_max_level;i++) current_blocks[i]=_header->forward_blocks[i];
+
+
+    for(int i=0;i<this->_element_count;i++)
+    {
+        random_level =get_random_level(vec[i].second);
+        new_node =new Node<K,V>(vec[i].first.first,vec[i].first.second,random_level,vec[i].second);
+        memset(new_node->forward,0,sizeof(Node<K, V>**)*(random_level+1));
+        memset(new_node->forward_blocks,0,sizeof(Block<K, V>**)*(random_level+1));
+        if(this->_skip_list_level<random_level)
+        {
+            _skip_list_level=random_level;
+        }//如果最大高度更大则新增层
+        for(int j =0;j<=random_level;j++)
+        {
+            level_current[j]->forward[j] = new_node;//更新插入层最后一个节点的后继
+            level_current[j] = new_node;//更新最后一个节点的记录
+            if(j==random_level) current_blocks[j]->nodes.push_back(new_node);
+            if(j>0)
+            {
+                new_block=new Block<K,V>(new_node,j-1,nullptr);
+                current_blocks[j-1]->next=new_block;
+                current_blocks[j-1]=new_block;
+                new_node->forward_blocks[j-1]=current_blocks[j-1];
             }
         }
     }
+    delete[] level_current;
+    std::cout<<"bulk load end"<<std::endl;
+}
+template<typename K,typename V>
 
-    int get_random_level(double p)
-    {
-        int level = 0;
-        for(int i=1; i<=max_level; i++)
-        {
-            if(p >= p_thresholds[level+1] || std::rand() % 2)
-                level++;
-            else
-                break;
-        }
-        return level;
-    }
-
-    int getHeight(){
-        return levels.size();
+SkipList<K,V>::SkipList(int max_level)
+{
+    this->_max_level=max_level;
+    this->_skip_list_level=0;
+    this->_element_count=0;
+    K k;
+    V v;
+    this->_header=new Node<K,V>(k,v,_max_level,0);//头节点在最高层级
+    //this->_block_header=new Block<K,V> (this->_header,_max_level,nullptr);
+    // 初始化 _header 的 forward_blocks
+    for (int i = 0; i <= _max_level; i++) {
+        this->_header->forward_blocks[i] = new Block<K, V>(this->_header, i, nullptr);
     }
 };
+//释放内存，关闭_file_writer  _file_reader
+template<typename K,typename V>
+SkipList<K,V>::~SkipList()
+{
+    if(_file_writer.is_open())
+    {
+        _file_writer.close();
+    }
+    if(_file_reader.is_open())
+    {
+        _file_reader.close();
+    }
+    //删除内部节点
+    Node<K,V>* current =_header;
+    Node<K,V>* next = _header->forward[0];
+    while (next!=NULL)
+    {
+        delete current;
+        current =next;
+        next =next->forward[0];
+    }
+}
+//生成一个随机层级。从第一层开始，每一层以 50% 的概率加入
+template<typename K,typename V>
+int SkipList<K,V>::get_random_level(double p)
+{
+    int level = 0;
+    // double target = ((((uint64_t)1<<level)-1)/float(_element_count));
+    // while ((std::rand()%2||(p>=target)) && level < _max_level)
+    // {
+    //     level += 1;
+    //     target =((((uint64_t)1<<level)-1)/float(_element_count));
+    // }
+        
+    // level=(level<_max_level)?level:_max_level;
+
+    for (int i = 1; i <= _max_level; i ++)
+    {
+        if (p >= p_thresholds[level + 1] || !(std::rand() % 2) )
+            level ++;
+        else
+            break;
+    }
+    // printf("p= %.7f, level= %d\n", p, level);
+
+    return level;
+};
+#endif

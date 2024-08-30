@@ -37,7 +37,7 @@ private:
     ulong numReqs = 0;
     ulong displacement;
     struct timespec startTime, endTime;
-    BSkipList skiplist;
+    SkipList<ulong, ulong> skiplist;
     // std::unordered_map<ulong, uint8_t> accessCounter;
     // uint8_t totalAccess = 0;
 
