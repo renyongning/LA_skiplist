@@ -1,7 +1,7 @@
 #ifdef OURS
 #include "ours.h"
 
-LAskiplist::LAskiplist() {
+LAskiplist::LAskiplist() : sketch(eps, gamma) {
     this->cardinality = 0;
     std::cout << "Data Structure: Our Learning-Augmented Skiplist" << std::endl;
 }

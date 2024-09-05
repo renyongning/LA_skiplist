@@ -1,4 +1,4 @@
-#include "LA_skiplist.h"
+#include "b_skiplist.h"
 
 int main()
 {
@@ -34,4 +34,10 @@ int main()
     sl.bulkload(vec);
 
     sl.display_list();
+
+    sl.display_blocks();
+
+    for(int i=1; i<13; i++){
+        sl.search(i);
+    }
 }

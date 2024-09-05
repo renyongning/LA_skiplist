@@ -1,5 +1,5 @@
-CC=g++ -O3 -march=native
-USUAL=-w -Icompetitors -o benchmark.out main.cpp
+CC=g++ -O3 -march=native -fopenmp
+USUAL=-w -Icompetitors -I../dependency -o benchmark.out main.cpp
 
 chainedhash: main.cpp workload.cpp workload.h metrics.cpp metrics.h competitors/chainedhash.cpp competitors/chainedhash.h storage_engine.cpp
 	$(CC) -DCHAINEDHASH $(USUAL)

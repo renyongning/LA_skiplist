@@ -1,3 +1,19 @@
+**2024.09.05更新：**
+
+- 实现Sketch预测频率与Top K频率维护（*../dependency/sketch.h*与*../dependency/min_heap.h*）
+
+- sketch usage:
+  - 若对某键key访问count次，需要将访问频率更新至sketch中：`sketch.update(key, count)`
+  - 若需要得到某键key的预测频率（非归一化）：`sketch.estimate(key)`
+  - 若需要得到总访问次数：`sketch.totalcount()`
+
+- Top K usage:
+
+  - 若需要尝试将访问频率为f（归一化）的key加入到Top K中：`topK.add(key, f)`  (add函数内部已考虑与堆顶元素的频率大小比较)
+  - 若需要从Top K中获取某key的频率：`topK.getFreq(key)`
+
+  ---------------------------------------------------------------------------------------------------------------
+  
 - 基于zyk分支8月12日的提交的版本，即没有A2算法的LAskiplist，维护了基础的b-skiplist的Block结构
 - 参考的论文是The B-Skip-List: A Simpler Uniquely Represented Alternative to B-Trees （Write-Optimized Skip Lists中所用的Bskiplist结构是考虑了write缓冲区的Bskiplist，我们实现的是暂时没有考虑上缓冲区的bskiplist，参考论文为Write-Optimized的一篇引用论文）
 - 划分block的逻辑为 第`i`层的`x`个node,会把第`i-1`层的链表划分为`x+1`个Block
