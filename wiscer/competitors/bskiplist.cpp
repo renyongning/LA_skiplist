@@ -2,10 +2,14 @@
 #include "bskiplist.h"
 #include <unordered_map>
 
-BskipList::BskipList() {
+
+BskipList::BskipList()
+    : skiplist(32, 1, 64)  // 分别为 maxlevel；key_of_thresholds; key_of_getlevel;
+{
     this->cardinality = 0;
-    std::cout << "Data Structure: B-Skiplist" << std::endl;
+    std::cout << "Data Structure: B-Skiplist " << std::endl;
 }
+
 
 void BskipList::initHashpower(int hashpower) {
     return;
@@ -69,7 +73,7 @@ void BskipList::rehash() {
 }
 
 void BskipList::free() {
-    //accessCounter.clear();
+    accessCounter.clear();
 }
 
 inline ulong BskipList::_random() {

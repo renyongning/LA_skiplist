@@ -31,12 +31,12 @@ typedef struct HashmapReq {
 
 class LAskiplist {
 private:
+    int phase=0;
     long cardinality;
     ulong numReqs = 0;
     ulong displacement;
     struct timespec startTime, endTime;
     SkipList<ulong, ulong> skiplist;
-    int phase=0;
    
 public:
     LAskiplist();

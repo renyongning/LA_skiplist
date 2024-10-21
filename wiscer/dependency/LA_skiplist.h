@@ -15,6 +15,8 @@
 std::string delimiter=":";  //存放到STORE_FILE中时，将delimiter也存入进文件中，用于get_key_value_from_string的key与value区分
 std::mt19937 generator(std::random_device{}());
 std::uniform_int_distribution<int> distribution(0, 99);
+
+
 template<typename K,typename V>
 class Node{
 public:
@@ -415,7 +417,7 @@ int SkipList<K,V>::get_random_level(double p)
 
     for (int i = 1; i <= _max_level; i ++)
     {
-        if (p >= p_thresholds[level + 1] || std::rand() % 2)
+        if (p >= p_thresholds[level + 1] || !(std::rand() % 2))
             level ++;
         else
             break;
