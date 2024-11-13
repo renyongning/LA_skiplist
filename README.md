@@ -53,7 +53,7 @@ Level 2:   [7683896064, 15]
 
 - 在维护了block数据结构的基础上,实现了search insert remove(delete_element)操作,插入删除都不涉及进一步维护概率.
 
-#### 测试说明 
+#### 测试参数说明 
 
 - SkipList 新增构造函数 SkipList<K,V>::SkipList(int maxlevel, int k_of_thresholds, int k_of_getlevel)
 -   其中 maxlevel为最大层数  
@@ -85,5 +85,29 @@ Level 2:   [7683896064, 15]
 | 32         | 2                 | 16              | 1.85           |
 | 32         | 1                 | 32              | 2.0            |
 | 32         | 1                 | 64              | 1.95           |
+| 8         | 2                 | 64              | 3.34            |
+| 3         | 4                 | 64              | 3.8           |
 
 参考LAskiplist的Net throughput大概为1.8
+
+#### 测试方式
+cd wiscer
+make bskiplist    #或者选择其他在makefile中的结构
+./benchmark.out workloads/test 
+
+修改bskiplist参数进行测试需要修改/wiscer/competitors/bskiplist.cpp中的构造函数
+
+```
+
+BskipList::BskipList()
+
+    : skiplist(3,4, 64)  // 分别为 maxlevel；key_of_thresholds; key_of_getlevel;
+
+{
+
+    this->cardinality = 0;
+
+    std::cout << "Data Structure: B-Skiplist " << std::endl;
+
+}
+```
