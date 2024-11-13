@@ -14,6 +14,7 @@ void Btree::initHashpower(int hashpower) {
 
 void Btree::bulkLoad(ulong *keys, ulong num_keys) {
     //generate key-value pairs
+    std::sort(keys, keys + num_keys);
     std::vector<std::pair<ulong, ulong>> pairs;
     for(ulong i=0; i<num_keys; i++)
     {

@@ -4,7 +4,7 @@
 
 
 BskipList::BskipList()
-    : skiplist(32, 1, 64)  // 分别为 maxlevel；key_of_thresholds; key_of_getlevel;
+    : skiplist(3,4, 64)  // 分别为 maxlevel；key_of_thresholds; key_of_getlevel;
 {
     this->cardinality = 0;
     std::cout << "Data Structure: B-Skiplist " << std::endl;
@@ -14,18 +14,6 @@ BskipList::BskipList()
 void BskipList::initHashpower(int hashpower) {
     return;
 }
-
-/*void ChainedHashmap::bulkLoad(ulong *keys, ulong num_keys) {
-    vector<pair<ulong,ulong>> blukdata;
-    for(int i=0;i<num_keys;i++)
-    {
-        blukdata.push_back(pair<ulong,ulong>(keys[i],_random()));
-        //accessCounter[keys[i]] = 1;
-    }
-    //totalAccess += num_keys;
-    //skiplist.bulkload(blukdata);
-    this->cardinality = num_keys;
-}*/
 void BskipList::bulkLoad(ulong *keys, ulong num_keys) {
     // 对keys进行排序
     std::sort(keys, keys + num_keys);
@@ -85,14 +73,8 @@ inline ulong BskipList::_random() {
 
 inline void BskipList::_fetch(HashmapReq *r) {
     ulong res =skiplist.search(r->key);
-// #if _COUNT_DISP_
-//     displacement += tmp;
-// #endif
     if(res == NULL) return;
-
     r->value = res;
-    //accessCounter[r->key] += 1;
-    //totalAccess += 1;
     numReqs += 1;
 }
 

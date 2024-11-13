@@ -143,6 +143,7 @@ public:
     Node<K,V>*create_node(K,V,int,double);
     int insert(K,V,double);
     void display_list();
+    void block_info();
     void display_blocks();
     void delete_element(K);
     V search(K);
@@ -309,6 +310,30 @@ void SkipList<K,V>::display_list()
             node=node->forward[i];
         }
         std::cout<<std::endl;
+    }
+}
+template<typename K, typename V>
+void SkipList<K, V>::block_info()
+{
+    std::cout << "\n*****Block Info of SkipList*****\n";
+    for (int i = 0; i <= _skip_list_level; i++) {
+        int total_nodes = 0;
+        int block_count = 0;
+
+        // 获取level i的第一个block
+        Block<K, V> *block = this->_header->forward_blocks[i];
+
+        while (block != nullptr) {
+            total_nodes += block->nodes.size();
+            block_count += 1;
+
+            // 移动到下一个block
+            block = block->next;
+        }
+
+        double average = block_count > 0 ? static_cast<double>(total_nodes) / block_count : 0.0;
+
+        std::cout << "Level " << i << ": Average nodes per block = " << average << std::endl;
     }
 }
 
@@ -625,7 +650,9 @@ void SkipList<K,V>::bulkload(std::vector<std::pair<std::pair<K,V>,double>> vec)
     }
     //_header->forward_blocks[_skip_list_level]=current_blocks[_skip_list_level];
     delete[] level_current;
+
     std::cout<<"bulk load end"<<std::endl;
+    this->block_info();
 }
 template<typename K,typename V>
 

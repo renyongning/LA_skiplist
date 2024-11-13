@@ -16,6 +16,8 @@ void SkipList::initHashpower(int hashpower) {
 }
 
 void SkipList::bulkLoad(ulong *keys, ulong num_keys) {
+    // 对keys进行排序
+    std::sort(keys, keys + num_keys);
     for (ulong i=0; i<num_keys; i++) {
         leveldb_skiplist.Insert(keys[i]);
     }

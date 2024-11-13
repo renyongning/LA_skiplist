@@ -193,13 +193,14 @@ void Workload::run() {
     //为了使用统计的准确频率，将bulkload从inithashmap函数中放到后面
     //将popOrder（可能被更改过）改为原始的originOrder
     hm->bulkLoad(originOrder, initialSize);
-
+    //std::cout<<"bulkload success"<<std::endl;
     for (ulong i=0; i<numBatches; i++) {
         ulong batchSize = this->batchSize;
         if (i == numBatches - 1 && (this->operationCount % this->batchSize) > 0) {
             batchSize = this->operationCount % this->batchSize;
         }
         m = hm->processRequests(&reqs[i*(this->batchSize)], batchSize); // us
+        //std::cout<<"success batch "<< i <<std::endl;
         throughput[i] = (1000000*batchSize)/m.timeElapsedus;
         retdInsts[i] = m.retiredInst;
         l3Misses[i] = m.l3Miss;

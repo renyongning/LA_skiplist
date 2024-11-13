@@ -13,18 +13,15 @@ void LAskiplist::initHashpower(int hashpower) {
 void LAskiplist::bulkLoad(ulong *keys, ulong num_keys) {
     // 对keys进行排序
     std::sort(keys, keys + num_keys);
-    vector<pair<pair<ulong,ulong>,double>> blukdata;
+    vector<pair<pair<ulong,ulong>,double>> bulkdata;
     for(int i=0;i<num_keys;i++)
     {
-        //现在的版本在bulkload就传入了已知的键的频率
-        blukdata.push_back(pair<pair<ulong,ulong>,double>(pair<ulong,ulong>(keys[i],_random()),probs[phase][keys[i]]));
-        
-        //原来的版本
-        //blukdata.push_back(pair<pair<ulong,ulong>,double>(pair<ulong,ulong>(keys[i],_random()),1/num_keys));
+        //在bulkload就传入了已知的键的频率
+        bulkdata.push_back(pair<pair<ulong,ulong>,double>(pair<ulong,ulong>(keys[i],_random()),probs[phase][keys[i]]));
         
     }
 
-    skiplist.bulkload(blukdata);
+    skiplist.bulkload(bulkdata);
     this->cardinality = num_keys;
 }
 
