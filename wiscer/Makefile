@@ -34,6 +34,9 @@ robustsl: main.cpp workload.cpp workload.h metrics.cpp metrics.h competitors/rob
 dnrobustsl: main.cpp workload.cpp workload.h metrics.cpp metrics.h competitors/dynamic_robustsl.cpp competitors/dynamic_robustsl.h storage_engine.cpp
 	$(CC) -DDNROBUSTSL $(USUAL)
 
+new: main.cpp workload.cpp workload.h metrics.cpp metrics.h competitors/bskiplist_pla.cpp competitors/bskiplist_pla.h storage_engine.cpp
+	$(CC) -DBSKIPLIST_PLA $(USUAL)
+
 clean:
 	rm -f *.o
 	rm -f *.out

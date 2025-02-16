@@ -41,3 +41,7 @@
 #ifdef DNROBUSTSL
 #include "dynamic_robustsl.cpp"
 #endif
+
+#ifdef BSKIPLIST_PLA
+#include "bskiplist_pla.cpp"
+#endif
