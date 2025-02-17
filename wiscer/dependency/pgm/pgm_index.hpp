@@ -26,6 +26,7 @@
 #include <type_traits>
 #include <utility>
 #include <vector>
+#include <iostream>
 
 namespace pgm {
 
@@ -160,16 +161,28 @@ public:
 
     static constexpr size_t epsilon_value = Epsilon;
 
+    // copy origin data
+    std::vector<K> data_copy;
+
     /**
      * Constructs an empty index.
      */
-    PGMIndex() = default;
+    PGMIndex() : segments(), levels_offsets() {} 
+
+    void build_model(const std::vector<K> &data)
+    {
+        auto first = data.begin(), last = data.end();
+        n = std::distance(first, last);
+        first_key = n ? *first : K(0);
+        data_copy = data;
+        build(first, last, Epsilon, EpsilonRecursive, segments, levels_offsets);
+    }
 
     /**
      * Constructs the index on the given sorted vector.
      * @param data the vector of keys to be indexed, must be sorted
      */
-    explicit PGMIndex(const std::vector<K> &data) : PGMIndex(data.begin(), data.end()) {}
+    explicit PGMIndex(const std::vector<K> &data) : PGMIndex(data.begin(), data.end()) {data_copy=data;}
 
     /**
      * Constructs the index on the sorted keys in the range [first, last).
@@ -203,6 +216,48 @@ public:
      * @return the number of segments
      */
     size_t segments_count() const { return segments.empty() ? 0 : levels_offsets[1] - 1; }
+
+
+    // print for block in b-skip-list
+    void print_segments()
+    {
+        std::cout << "Print block info... Num of segments: " << segments.size() << std::endl;
+        auto it = segments.begin();
+        std::cout << "Slope: " << it->slope << " Intercept: " << it->intercept << " First key: " << it->key <<std::endl;            
+        
+        // values in the block
+        std::cout << "value num in the block: "<< data_copy.size() <<" [";
+        for (size_t j = 0; j < data_copy.size(); j++)
+        {
+            std::cout << data_copy[j];
+            if (j < data_copy.size() - 1)
+            {
+                std::cout << ", "; // 分隔每个节点的key
+            }
+        }
+        std::cout << "]"<<std::endl;
+
+        // check error bound
+        auto e=0u;
+        std::cout<<"epsilon: "<<epsilon_value<<" error: ";
+        for (auto i = 0u; i < data_copy.size(); ++i)
+        {
+            if (std::next(it) != segments.end() && std::next(it)->key <= data_copy[i])
+            {
+                ++it;
+                std::cout << "Slope: " << it->slope << " Intercept: " << it->intercept << " First key: " << it->key <<std::endl;            
+            }
+
+            auto pos = (data_copy[i] - it->key) * it->slope + it->intercept;
+            e = std::fabs(i - pos);
+            std::cout<<e<<' ';
+            if (e > epsilon_value + 1)
+            {
+                std::cout << "***Error: " << e << " exceeds allowed epsilon" << epsilon_value << "***" << std::endl;
+            }
+        }
+        std::cout<<std::endl;
+    }
 
     /**
      * Returns the number of levels of the index.

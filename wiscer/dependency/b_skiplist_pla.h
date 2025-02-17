@@ -65,11 +65,8 @@ public:
     Block *next;     // Pointer to the next block at the same level
     int block_level; // block所在的层次
 
-    using canonical_segment = typename pgm::internal::OptimalPiecewiseLinearModel<V, size_t>::CanonicalSegment;
-    std::vector<canonical_segment> segments;
-    size_t epsilon = 4; //模型精度, 32, 64, 128
-    typename std::vector<canonical_segment>::iterator it;
-    typename std::vector<canonical_segment>::iterator it_bak;
+    static constexpr int epsilon = 4; //模型精度, 32, 64, 128
+    pgm::PGMIndex<K, epsilon> index;
 
     Block(Node<K, V> *nodet, Block *next)
     {
@@ -172,8 +169,6 @@ public:
     void block_info();
     void display_blocks();
     void delete_element(K);
-    V search(K);
-    V search2(K);
     V search_with_pla(K);
     void dump_file();
     void load_file();
@@ -565,56 +560,6 @@ void SkipList<K, V>::delete_element(K key)
 }
 
 template <typename K, typename V>
-V SkipList<K, V>::search(K key)
-{
-    Node<K, V> *current = _header;
-
-    for (int i = _skip_list_level; i >= 0; i--)
-    {
-        Block<K, V> *block = current->forward_blocks[i];
-
-        int index = 0;
-        int bsize = block->keys.size();
-        while (index < bsize && block->keys[index] <= key)
-            index++;
-        index--;// 在block内搜索
-
-        current = block->nodes[index];
-        if (block->keys[index] == key)
-        {
-            return current->get_value();
-        }
-        // 否则，进入下一层继续查找
-    }
-    std::cout << "not find key=" << key << std::endl;
-    return V(); // 返回默认值
-}
-
-template <typename K, typename V>
-V SkipList<K, V>::search2(K key)
-{
-    Node<K, V> *current = _header;
-
-    for (int i = _skip_list_level; i >= 0; i--)
-    {
-        Block<K, V> *block = current->forward_blocks[i];
-
-        // 使用二分搜索查找 key 的位置
-        auto it = std::upper_bound(block->keys.begin(), block->keys.end(), key);
-        int index = it - block->keys.begin() - 1;
-
-        current = block->nodes[index];
-        if (block->keys[index] == key)
-        {
-            return current->get_value();
-        }
-        // 否则，进入下一层继续查找
-    }
-    std::cout << "not find key=" << key << std::endl;
-    return V(); // 返回默认值
-}
-
-template <typename K, typename V>
 V SkipList<K, V>::search_with_pla(K key)
 {
     Node<K, V> *current = _header;
@@ -622,28 +567,15 @@ V SkipList<K, V>::search_with_pla(K key)
     for (int i = _skip_list_level; i >= 0; i--)
     {
         Block<K, V> *block = current->forward_blocks[i];
-
-        // 在keys内部, 使用PLA-model查找 key 的位置 (实际上如果 block的keys包含的键个数不达到100或1000数量级, 很难分段)
-        auto it = block->it;
-        long double slope = 0;
-        size_t intercept = 0;
-        while (std::next(it) != block->segments.end() && std::next(it)->get_first_x() <= block->keys[i])
+        auto range = block->index.search(key);
+        // auto lo = block->keys.begin()+range.lo, hi = block->keys.begin() + range.hi;
+        // int index = *std::lower_bound(lo, hi, key);
+        // 最大范围为8, 没必要二分
+        int index=-1;
+        for (int i=range.lo;i<range.hi;i++) 
         {
-            ++it;
-            std::tie(slope, intercept) = it->get_floating_point_segment(it->get_first_x());
-            // std::cout << "Slope: " << slope << " Intercept: " << intercept << std::endl;
+            if (block->keys[i]<=key) index=i;
         }
-        size_t pos = (block->keys[i] - it->get_first_x()) * slope + intercept;
-        size_t pos_low, pos_high;
-        if (block->epsilon>pos) pos_low=0;
-        else pos_low=pos-block->epsilon;
-        pos_high=std::min(pos+block->epsilon, block->keys.size()-1);
-        auto begin = block->keys.begin() + pos_low, end = block->keys.begin() + pos_high + 1;
-        // 在误差范围内二次搜索
-        auto it_final = std::upper_bound(begin, end, key);
-        int index = it_final - block->keys.begin() - 1;
-        // 复原该block的iterator
-        block->it=block->it_bak;
 
         current = block->nodes[index];
         if (block->keys[index] == key)
@@ -668,12 +600,8 @@ void init_vec(Node<K, V> ***nodevc, Node<K, V> *source, int length)
 template<typename K, typename V>
 void build_pla_on_block(Block<K, V>& block)
 {
-    auto in_fun = [&](auto i) { return block.keys[i]; };
-    auto out_fun = [&](auto cs) { block.segments.emplace_back(cs); };
-    auto cs_num = pgm::internal::make_segmentation(block.keys.size(), block.epsilon, in_fun, out_fun);
-    block.it = block.segments.begin();
-    block.it_bak = block.it;
-    std::cout << "Successfully build PLA-model, number of segments: " << cs_num << std::endl;
+    block.index.build_model(block.keys);
+    std::cout << "Successfully build PLA-model" << std::endl;
 }
 
 template <typename K, typename V>
@@ -738,6 +666,7 @@ void SkipList<K, V>::bulkload(std::vector<std::pair<std::pair<K, V>, double>> ve
         {
             // build pla
             build_pla_on_block(*block);
+            block->index.print_segments();
             // move to next block
             block = block->next;
         }

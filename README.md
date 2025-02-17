@@ -1,5 +1,15 @@
+# Learning-augmented B-skip list
+![alt text](asset/image.png)
+<center>图: B-skip list</center>
 
-- 基于zyk分支8月12日的提交的版本，即没有A2算法的LAskiplist，维护了基础的b-skiplist的Block结构
+本项目构建了一个学习增强的B-skip list, 利用计算机的缓存特性提高跳表的查询效率, 通过概率分层级制使其能够感知负载热点信息动态做出调整, 并在block内构造凸包对数据进行分段拟合, 使跳表能够学习数据分布特征.
+
+## Upd 2025/2/16:
+- 将PLA-model接入B-skip list
+- todo: 性能测试
+---
+## Upd 2024:
+- 基于zyk分支的提交的版本，维护了基础的b-skiplist的Block结构
 - 参考的论文是The B-Skip-List: A Simpler Uniquely Represented Alternative to B-Trees （Write-Optimized Skip Lists中所用的Bskiplist结构是考虑了write缓冲区的Bskiplist，我们实现的是暂时没有考虑上缓冲区的bskiplist，参考论文为Write-Optimized的一篇引用论文）
 - 划分block的逻辑为 第`i`层的`x`个node,会把第`i-1`层的链表划分为`x+1`个Block
 - bulkload中实现了构造初始的Block,思路与函数中node的构建类似
@@ -49,7 +59,9 @@ Level 2:   [7683896064, 15]
 
 - level 2的 1个node，把level 1 的链表分割为 1+1=2个Block
 
-## 10-21 更新
+---
+
+## Upd 2024/10/21:
 
 - 在维护了block数据结构的基础上,实现了search insert remove(delete_element)操作,插入删除都不涉及进一步维护概率.
 

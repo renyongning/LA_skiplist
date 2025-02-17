@@ -37,6 +37,9 @@ dnrobustsl: main.cpp workload.cpp workload.h metrics.cpp metrics.h competitors/d
 new: main.cpp workload.cpp workload.h metrics.cpp metrics.h competitors/bskiplist_pla.cpp competitors/bskiplist_pla.h storage_engine.cpp
 	$(CC) -DBSKIPLIST_PLA $(USUAL)
 
+new_debug:
+	g++ -g -O0 -march=native -DDEBUG -DBSKIPLIST_PLA -Icompetitors -o debug main.cpp
+
 clean:
 	rm -f *.o
 	rm -f *.out
