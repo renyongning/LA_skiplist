@@ -65,7 +65,7 @@ public:
     Block *next;     // Pointer to the next block at the same level
     int block_level; // block所在的层次
 
-    static constexpr int epsilon = 4; //模型精度, 32, 64, 128
+    static constexpr int epsilon = 2; //模型精度, 32, 64, 128
     pgm::PGMIndex<K, epsilon> index;
 
     Block(Node<K, V> *nodet, Block *next)
@@ -570,7 +570,11 @@ V SkipList<K, V>::search_with_pla(K key)
         auto range = block->index.search(key);
         // auto lo = block->keys.begin()+range.lo, hi = block->keys.begin() + range.hi;
         // int index = *std::lower_bound(lo, hi, key);
-        // 最大范围为8, 没必要二分
+        current = block->nodes[range.pos];
+        if (block->keys[range.pos]==key)
+        {
+            return current->get_value();
+        }
         int index=-1;
         for (int i=range.lo;i<range.hi;i++) 
         {
