@@ -74,7 +74,7 @@ Workload::Workload(string filename) {
             } else if (strcmp(val, "sequential") == 0) {
                 this->keyPattern = SEQUENTIAL;
             } else {
-                this->keyPattern = SEQUENTIAL;
+                this->keyPattern = RANDOM;
             }
         } else if (strcmp(property, "keyorder") == 0) {
             if (strcmp(val, "random") == 0) {
@@ -172,6 +172,8 @@ void Workload::run() {
         }
         probs.push_back(currentProbs);
         changeTimes.push_back(currentTime);
+        storeRequestsToFile(reqs);
+        storeKeyFrequenciesToFile();
     }
     //排序后的键
     for (const auto& phaseProbs : probs) {
@@ -486,4 +488,46 @@ void Workload::_reverse(ulong *array, ulong len) {
         start += 1;
         end -= 1;
     }
+}
+
+void Workload::storeKeyFrequenciesToFile() {
+    // Open the file for writing, overwriting if it doesn't exist
+    ofstream output("../outputs/keys.csv", ios::trunc); // Open the file in append mode
+    cout << "storeKeyFrequenciesToFile" << endl;
+    if (!output.is_open()) {
+        cout << "Failed to open output file." << endl;
+        return;
+    }
+
+    // If it's the first time writing, add the header
+    if (output.tellp() == 0) {
+        output << "Key,Frequency\n";  // Write the header
+    }
+
+    // For each key, write its frequency to the file
+    for (const auto& pair : accessCounter) {
+        output << pair.first << "," << static_cast<double>(pair.second) / totalAccess << "\n";
+    }
+
+    output.close();
+}
+void Workload::storeRequestsToFile(HashmapReq* reqs) {
+    // Open the file to write, overwriting if it doesn't exist
+    ofstream output("../outputs/reqs.txt", ios::trunc); // Open the file in append mode
+    if (!output.is_open()) {
+        cout << "Failed to open output file." << endl;
+        return;
+    }
+
+    // Write all the FETCH requests' keys to the file
+    for (ulong i = 0; i < this->operationCount; i++) {
+        if (reqs[i].reqType == FETCH_REQ) {
+            output << reqs[i].key << " ";  // Write the key followed by a space
+        }
+    }
+
+    // End the line after writing all keys for this batch
+    output << "\n";  // Newline after writing all keys in this batch
+
+    output.close();
 }

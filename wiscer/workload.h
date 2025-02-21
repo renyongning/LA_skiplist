@@ -96,6 +96,8 @@ public:
     void storeOutput();
     void run();
     void free();
+    void storeKeyFrequenciesToFile();
+    void storeRequestsToFile(HashmapReq* reqs);
 };
 
 #endif // _WORKLOAD_H_

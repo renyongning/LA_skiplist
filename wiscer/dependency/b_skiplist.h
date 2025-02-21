@@ -147,6 +147,7 @@ public:
     void display_blocks();
     void delete_element(K);
     V search(K);
+    V search0(K);
     V search2(K);
     void dump_file();
     void load_file();
@@ -518,7 +519,7 @@ void SkipList<K,V>::delete_element(K key)
 
 //遍历每一层，从顶层开始，找到每层对应的位置，然后进入下一层开始查找，直到查找到对应的key
 //如果找到return true 输出Found  否则 return false ，输出Not Found
-/*template<typename K,typename V>
+template<typename K,typename V>
 V SkipList<K,V>::search(K key)
 {
     //std::cout<<"search_element------------"<<std::endl;
@@ -533,9 +534,9 @@ V SkipList<K,V>::search(K key)
 
     std::cout<<"not find key="<<key<<std::endl;
     return NULL;
-}*/
+}
 template<typename K, typename V>
-V SkipList<K, V>::search(K key) {
+V SkipList<K, V>::search0(K key) {
     Node<K, V>* current = _header;
 
     for (int i = _skip_list_level; i >= 0; i--) {

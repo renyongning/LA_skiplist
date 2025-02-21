@@ -4,7 +4,7 @@
 
 
 BskipList::BskipList()
-    : skiplist(3,4, 64)  // 分别为 maxlevel；key_of_thresholds; key_of_getlevel;
+    : skiplist(3,4, 64)  // 分别为 maxlevel；key_of_thresholds; key_of_getlevel; 3 4 64 是目前测出来较好的参数
 {
     this->cardinality = 0;
     std::cout << "Data Structure: B-Skiplist " << std::endl;
@@ -72,7 +72,7 @@ inline ulong BskipList::_random() {
 }
 
 inline void BskipList::_fetch(HashmapReq *r) {
-    ulong res =skiplist.search(r->key);
+    ulong res =skiplist.search0(r->key);
     if(res == NULL) return;
     r->value = res;
     numReqs += 1;
