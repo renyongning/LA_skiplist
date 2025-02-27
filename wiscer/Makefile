@@ -1,4 +1,4 @@
-CC=g++ -O3 -march=native
+CC=g++ -O3 -march=native -std=c++17
 USUAL=-w -Icompetitors -o benchmark.out main.cpp
 
 chainedhash: main.cpp workload.cpp workload.h metrics.cpp metrics.h competitors/chainedhash.cpp competitors/chainedhash.h storage_engine.cpp
@@ -38,7 +38,7 @@ new: main.cpp workload.cpp workload.h metrics.cpp metrics.h competitors/bskiplis
 	$(CC) -DBSKIPLIST_PLA $(USUAL)
 
 new_debug:
-	g++ -g -O0 -march=native -DDEBUG -DBSKIPLIST_PLA -Icompetitors -o debug main.cpp
+	g++ -g -O0 -march=native -std=c++17 -DDEBUG -DBSKIPLIST_PLA -Icompetitors -o debug main.cpp
 
 clean:
 	rm -f *.o
