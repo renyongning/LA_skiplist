@@ -18,6 +18,10 @@
 #include "skiplist.cpp"
 #endif
 
+#ifdef BSKIPLIST
+#include "bskiplist.cpp"
+#endif
+
 #ifdef OURS
 #include "ours.cpp"
 #endif
@@ -28,4 +32,12 @@
 
 #ifdef BTREE
 #include "btree.cpp"
+#endif
+
+#ifdef ROBUSTSL
+#include "robustsl.cpp"
+#endif
+
+#ifdef DNROBUSTSL
+#include "dynamic_robustsl.cpp"
 #endif

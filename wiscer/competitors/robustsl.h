@@ -1,4 +1,5 @@
-#ifdef OURS
+#define ROBUSTSL
+#ifdef ROBUSTSL
 
 #include <cstdio>
 #include <cstdlib>
@@ -10,9 +11,10 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include "../metrics.h"
-#include "../../SkipList/LA_skiplist.h"
-//#include "../dependency/LA_skiplist.h"
-#include<unordered_map>
+#include "../dependency/RobustSL.h"
+#include <unordered_map>
+#include <vector>
+#include <algorithm>
 extern std::unordered_map<ulong, ulong> accessCounter; 
 extern ulong totalAccess; 
 extern std::vector<std::unordered_map<ulong, double>> probs;
@@ -30,20 +32,19 @@ typedef struct HashmapReq {
     uint8_t reqType;
 } HashmapReq;
 
-class LAskiplist {
+class RobustSL {
 private:
-    int phase=0;
     long cardinality;
     ulong numReqs = 0;
     ulong displacement;
     struct timespec startTime, endTime;
     SkipList<ulong, ulong> skiplist;
+    int phase=0;
    
 public:
-    LAskiplist();
+    RobustSL();
     void initHashpower(int);
     void bulkLoad(ulong*, ulong);
-    void printlist();
     Metrics processRequests(HashmapReq*, ulong);
     void rehash();
     void free();
@@ -56,6 +57,6 @@ public:
     ulong _getTimeDiff(struct timespec, struct timespec);
 };
 
-typedef LAskiplist Hashmap;
+typedef RobustSL Hashmap;
 
-#endif // OURS
+#endif // ROBUSTSL

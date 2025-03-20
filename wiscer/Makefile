@@ -16,6 +16,9 @@ stdmap: main.cpp workload.cpp workload.h metrics.cpp metrics.h competitors/stdma
 skiplist: main.cpp workload.cpp workload.h metrics.cpp metrics.h competitors/skiplist.cpp competitors/skiplist.h storage_engine.cpp
 	$(CC) -DSKIPLIST $(USUAL)
 
+bskiplist: main.cpp workload.cpp workload.h metrics.cpp metrics.h competitors/bskiplist.cpp competitors/bskiplist.h storage_engine.cpp
+	$(CC) -DBSKIPLIST $(USUAL)
+
 ours: main.cpp workload.cpp workload.h metrics.cpp metrics.h competitors/ours.cpp competitors/ours.h storage_engine.cpp
 	$(CC) -DOURS $(USUAL)
 
@@ -24,6 +27,12 @@ leveldb_skiplist: main.cpp workload.cpp workload.h metrics.cpp metrics.h competi
 
 btree: main.cpp workload.cpp workload.h metrics.cpp metrics.h competitors/btree.cpp competitors/btree.h storage_engine.cpp
 	$(CC) -DBTREE $(USUAL)
+
+robustsl: main.cpp workload.cpp workload.h metrics.cpp metrics.h competitors/robustsl.cpp competitors/robustsl.h storage_engine.cpp
+	$(CC) -DROBUSTSL $(USUAL)
+
+dnrobustsl: main.cpp workload.cpp workload.h metrics.cpp metrics.h competitors/dynamic_robustsl.cpp competitors/dynamic_robustsl.h storage_engine.cpp
+	$(CC) -DDNROBUSTSL $(USUAL)
 
 clean:
 	rm -f *.o

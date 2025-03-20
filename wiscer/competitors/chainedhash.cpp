@@ -33,7 +33,9 @@ void ChainedHashmap::bulkLoad(ulong *keys, ulong num_keys) {
 Metrics ChainedHashmap::processRequests(HashmapReq *reqs, ulong count) {
     Metrics m;
     m.displacement = displacement;
+    std::cout<<"init Metrics success"<<std::endl;
     getMetricsStart(m);
+    std::cout<<"start success"<<std::endl;
     for (ulong i=0; i<count; i++) {
         switch (reqs[i].reqType) {
             case FETCH_REQ:
@@ -50,6 +52,7 @@ Metrics ChainedHashmap::processRequests(HashmapReq *reqs, ulong count) {
         }
     }
     getMetricsEnd(m);
+    std::cout<<"end success"<<std::endl;
     m.displacement = displacement - m.displacement;
     return m;
 }

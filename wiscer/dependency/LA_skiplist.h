@@ -13,8 +13,10 @@
 
 //std::mutex mtx;  //代表互斥锁 ，保持线程同步
 std::string delimiter=":";  //存放到STORE_FILE中时，将delimiter也存入进文件中，用于get_key_value_from_string的key与value区分
-template<typename K,typename V>
-class SkipList;
+std::mt19937 generator(std::random_device{}());
+std::uniform_int_distribution<int> distribution(0, 99);
+
+
 template<typename K,typename V>
 class Node{
 public:
@@ -105,8 +107,8 @@ private:
     std::ofstream _file_writer;  //默认以输入(writer)方式打开文件。
     std::ifstream _file_reader;  //默认以输出(reader)方式打开文件。
     int _element_count;          //表示跳表中元素的数量
-    int first_skiplist_numnber;//第一个跳表中的元素数量
-    int second_skiplsit_number;//第二个跳表中的元素数量
+
+    std::vector<double> p_thresholds; // p_thresholds[i]表示将一个节点提升至level_i的阈值
 };
 
 //create_node函数：根据给定的键、值和层级创建一个新节点，并返回该节点的指针
@@ -339,31 +341,23 @@ V SkipList<K,V>::search(K key)
     //std::cout<<"search_element------------"<<std::endl;
     //首先在第一层跳表中寻找
     Node<K,V> *current=_header;
-    for(int i=_skip_list_level;i>=0;i--)
-    {
-        while(current->forward[i]&&current->forward[i]->key<=key)
-        {
-            if(current->forward[i]->key==key)
-            {
-                return current->forward[i]->value;
-            }//找到目标节点后立刻退出
-            current=current->forward[i];
-        }
-    }
-    //如果没有则在第二层跳表中寻找
-    current = second_header;
-    for (int i = second_skip_list_level; i >= 0; i--)
-    {
-        while (current->forward[i] && current->forward[i]->key <= key)
-        {
-            if(current->forward[i]->key==key)
-            {
-                return current->forward[i]->value;
-            }//找到目标节点后立刻退出
+    for (int i = _skip_list_level; i >= 0; i--) {
+        while (current->forward[i] && current->forward[i]->get_key() <= key) {
+            if (current->forward[i]->get_key() == key)
+                return current->forward[i]->get_value();
             current = current->forward[i];
         }
     }
-    return NULL;//没有找到
+    // if (current->get_key() == key)
+    //     return current->get_value();
+    // current=current->forward[0];
+    // if(current && current->get_key()==key)
+    // {
+    //     //std::cout<<"Found key:"<<key<<",value:"<<current->get_value()<<std::endl;
+    //     return current->get_value();
+    // }
+    //std::cout<<"Not Found Key:"<<key<<std::endl;
+    return NULL;
 }
 template<typename K,typename V>
 void init_vec(Node<K,V>*** nodevc,Node<K,V>* source,int length)
@@ -381,10 +375,16 @@ void SkipList<K,V>::bulkload(std::vector<std::pair<std::pair<K,V>,double>> vec)
 {
     std::srand(time(NULL));
     this->_element_count =vec.size();
-    Node<K,V>** _level_current =new Node<K,V>*[_max_level+1];//得到每一层当前的最后一个元素(初始为header)
-    Node<K,V>** _second_list_level_curent = new Node<K,V>*[_max_level+1];//第二个跳表的levelcurrent
-    init_vec(&_level_current,this->_header,_max_level+1);
-    init_vec(&_second_list_level_curent,this->second_header,_max_level+1);//初始化为头指针
+
+    for (int i = 0; i <= _max_level; i ++)
+    {
+        double p_threshold = ((1ul << i) - 1.0) / _element_count;
+        p_thresholds.push_back(p_threshold);
+        // std::cout << i << " : " << p_threshold << std::endl;
+    }
+
+    Node<K,V>** level_current =new Node<K,V>*[_max_level+1];//得到每一层当前的最后一个元素(初始为header)
+    int i=0;
     Node<K,V>* new_node;
     int random_level;
     int* skip_list_level;
@@ -469,14 +469,24 @@ template<typename K,typename V>
 int SkipList<K,V>::get_random_level(double p)
 {
     int level = 0;
-    double target = ((((uint64_t)1<<level)-1)/float(_element_count));
-    while ((std::rand()%2||(p>=target)) && level < _max_level)
-    {
-        level += 1;
-        target =((((uint64_t)1<<level)-1)/float(_element_count));
-    }
+    // double target = ((((uint64_t)1<<level)-1)/float(_element_count));
+    // while ((std::rand()%2||(p>=target)) && level < _max_level)
+    // {
+    //     level += 1;
+    //     target =((((uint64_t)1<<level)-1)/float(_element_count));
+    // }
         
-    level=(level<_max_level)?level:_max_level;
+    // level=(level<_max_level)?level:_max_level;
+
+    for (int i = 1; i <= _max_level; i ++)
+    {
+        if (p >= p_thresholds[level + 1] || !(std::rand() % 2))
+            level ++;
+        else
+            break;
+    }
+    // printf("p= %.7f, level= %d\n", p, level);
+
     return level;
 };
 #endif

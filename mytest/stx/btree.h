@@ -46,7 +46,7 @@
 #include <memory>
 #include <cstddef>
 #include <cassert>
-
+#include <map>
 // *** Debugging Macros
 
 #ifdef BTREE_DEBUG
@@ -167,6 +167,8 @@ template <typename _Key, typename _Data,
 class btree
 {
 public:
+    int shift_in=0;
+    int shift_down_in=0;
     // *** Template Parameter Types
 
     /// First template parameter: The key type of the B+ tree. This is stored
@@ -1776,14 +1778,18 @@ public:
     /// key/data slot if found. If unsuccessful it returns end().
     iterator find(const key_type& key, ulong& displacement)
     {
+        
         node* n = m_root;
         if (!n) return end();
 
         while (!n->isleafnode())
         {
-            displacement += 1;
+            shift_down_in += 1;
             const inner_node* inner = static_cast<const inner_node*>(n);
             int slot = find_lower(inner, key);
+            shift_in += (slot+1);
+            const inner_node* dummy_inner = static_cast<const inner_node*>(n);  // Dummy assignment
+            int dummy_value = dummy_inner->slotuse;  // Extra dereference (no functional impact)
 
             n = inner->childid[slot];
         }
@@ -1791,7 +1797,7 @@ public:
         leaf_node* leaf = static_cast<leaf_node*>(n);
 
         int slot = find_lower(leaf, key);
-        displacement += slot+1;
+        shift_in += (slot+1);
         return (slot < leaf->slotuse && key_equal(key, leaf->slotkey[slot]))
                ? iterator(leaf, slot) : end();
     }
@@ -2408,6 +2414,7 @@ void bulk_load(Iterator ibegin, Iterator iend)
 
     // Map to store statistics: level -> (number of nodes, total keys)
     std::map<int, std::pair<size_t, size_t>> level_stats;
+    std::map<int, size_t> squares;
 
     // calculate number of leaves needed, round up.
     size_t num_items = iend - ibegin;
@@ -2429,6 +2436,7 @@ void bulk_load(Iterator ibegin, Iterator iend)
         // Update level 0 statistics
         level_stats[0].first += 1; // Increment node count
         level_stats[0].second += leaf->slotuse; // Increment total keys
+        squares[0]+=leaf->slotuse*leaf->slotuse;
 
         if (m_tailleaf != NULL) {
             m_tailleaf->nextleaf = leaf;
@@ -2455,9 +2463,11 @@ void bulk_load(Iterator ibegin, Iterator iend)
             int level = entry.first;
             size_t num_nodes = entry.second.first;
             size_t total_keys = entry.second.second;
+            size_t squaretotal=squares[level];
             double average = num_nodes > 0 ? static_cast<double>(total_keys) / num_nodes : 0.0;
+            double average2 = num_nodes > 0 ? static_cast<double>(squaretotal) / num_nodes : 0.0;
 
-            std::cout << "Level " << level << ": Average key-value pairs per node = " << average << std::endl;
+            std::cout << "Level " << level << ": Average key-value pairs per node = " << average <<" ^2 = "<<average2<< std::endl;
         }
         return;
     }
@@ -2493,6 +2503,7 @@ void bulk_load(Iterator ibegin, Iterator iend)
         // Update level 1 statistics
         level_stats[1].first += 1; // Increment node count
         level_stats[1].second += n->slotuse; // Increment total keys
+        squares[1]+=n->slotuse*n->slotuse;
 
         // track max key of any descendant.
         nextlevel[i].first = n;
@@ -2534,7 +2545,7 @@ void bulk_load(Iterator ibegin, Iterator iend)
             // Update level statistics
             level_stats[level].first += 1; // Increment node count
             level_stats[level].second += n->slotuse; // Increment total keys
-
+            squares[level]+=n->slotuse*n->slotuse;
             // reuse nextlevel array for parents
             nextlevel[i].first = n;
             nextlevel[i].second = nextlevel[inner_index].second;
@@ -2553,15 +2564,18 @@ void bulk_load(Iterator ibegin, Iterator iend)
 
     // Output statistics after bulk loading
     std::cout << "\n***** B-tree Node Statistics *****\n";
-    for (const auto& entry : level_stats)
-    {
-        int level = entry.first;
-        size_t num_nodes = entry.second.first;
-        size_t total_keys = entry.second.second;
-        double average = num_nodes > 0 ? static_cast<double>(total_keys) / num_nodes : 0.0;
+        for (const auto& entry : level_stats)
+        {
+            int level = entry.first;
+            size_t num_nodes = entry.second.first;
+            size_t total_keys = entry.second.second;
+            size_t squaretotal=squares[level];
+            double average = num_nodes > 0 ? static_cast<double>(total_keys) / num_nodes : 0.0;
+            double average2 = num_nodes > 0 ? static_cast<double>(squaretotal) / num_nodes : 0.0;
 
-        std::cout << "Level " << level << ": Average key-value pairs per node = " << average << std::endl;
-    }
+            std::cout << "Level " << level << ": Average key-value pairs per node = " << average <<" ^2 = "<<average2<< std::endl;
+        }
+
 }
 
 

@@ -1,4 +1,4 @@
-#ifdef OURS
+#ifdef BSKIPLIST
 
 #include <cstdio>
 #include <cstdlib>
@@ -10,14 +10,14 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include "../metrics.h"
-#include "../../SkipList/LA_skiplist.h"
-//#include "../dependency/LA_skiplist.h"
-#include<unordered_map>
+#include "../dependency/b_skiplist.h"
+
 extern std::unordered_map<ulong, ulong> accessCounter; 
 extern ulong totalAccess; 
 extern std::vector<std::unordered_map<ulong, double>> probs;
 extern std::vector<ulong> changeTimes; 
 extern std::vector<std::vector<std::pair<ulong, double>>> sortedProbs;
+
 using namespace std;
 
 #define FETCH_REQ 0
@@ -30,7 +30,7 @@ typedef struct HashmapReq {
     uint8_t reqType;
 } HashmapReq;
 
-class LAskiplist {
+class BskipList {
 private:
     int phase=0;
     long cardinality;
@@ -38,12 +38,13 @@ private:
     ulong displacement;
     struct timespec startTime, endTime;
     SkipList<ulong, ulong> skiplist;
-   
+    // std::unordered_map<ulong, uint8_t> accessCounter;
+    // uint8_t totalAccess = 0;
+
 public:
-    LAskiplist();
+    BskipList();
     void initHashpower(int);
     void bulkLoad(ulong*, ulong);
-    void printlist();
     Metrics processRequests(HashmapReq*, ulong);
     void rehash();
     void free();
@@ -56,6 +57,6 @@ public:
     ulong _getTimeDiff(struct timespec, struct timespec);
 };
 
-typedef LAskiplist Hashmap;
+typedef BskipList Hashmap;
 
-#endif // OURS
+#endif // BSKIPLIST

@@ -62,9 +62,13 @@ unsigned long rdpmc_l2_cache_misses() {
 
 void getMetricsStart(Metrics &m) {
     clock_gettime(CLOCK_MONOTONIC, &(m.startTime));
+    //std::cout<<"gettime success"<<std::endl;
     m.l3Miss = rdpmc_llc_cache_misses();
+    //std::cout<<"llc success"<<std::endl;
     m.l2Miss = rdpmc_l2_cache_misses();
+    //std::cout<<"l2 success"<<std::endl;
     m.l1Miss = rdpmc_l2_cache_refs();
+    //std::cout<<"l2ref success"<<std::endl;
     m.retiredInst = rdpmc_retired_inst_all();
 }
 
