@@ -10,42 +10,39 @@
 # History Log
 
 
-- sketch usage:
-  - 若对某键key访问count次，需要将访问频率更新至sketch中：`sketch.update(key, count)`
-  - 若需要得到某键key的预测频率（非归一化）：`sketch.estimate(key)`
-  - 若需要得到总访问次数：`sketch.totalcount()`
+### sketch usage:
+- 若对某键key访问count次，需要将访问频率更新至sketch中：`sketch.update(key, count)`
+- 若需要得到某键key的预测频率（非归一化）：`sketch.estimate(key)`
+- 若需要得到总访问次数：`sketch.totalcount()`
 
-- Top K usage:
+### Top K usage:
 
-  - 若需要尝试将访问频率为f（归一化）的key加入到Top K中：`topK.add(key, f)`  (add函数内部已考虑与堆顶元素的频率大小比较)
-  - 若需要从Top K中获取某key的频率：`topK.getFreq(key)`
-  
+- 若需要尝试将访问频率为f（归一化）的key加入到Top K中：`topK.add(key, f)`  (add函数内部已考虑与堆顶元素的频率大小比较)
+- 若需要从Top K中获取某key的频率：`topK.getFreq(key)`
 
-- 结构示意图
+### 测试方式
+cd wiscer
+make bskiplist    #或者选择其他在makefile中的结构
+./benchmark.out workloads/test 
 
-*****SkipList*****
+修改bskiplist参数进行测试需要修改/wiscer/competitors/bskiplist.cpp中的构造函数
 
-Level0:   0;1;2;3;4;5;6;7;8;9;10;11;12;13;14;15;16;17;18;19;852;854;856;858;860;
+```
 
-Level1:   11;15;19;
+BskipList::BskipList()
 
-Level2:   15;
+    : skiplist(3,4, 64)  // 分别为 maxlevel；key_of_thresholds; key_of_getlevel;
 
-*****Block Structure of SkipList*****
+{
 
-Level 0:   [7683896064, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10] -> [11, 12, 13, 14] -> [15, 16, 17, 18] -> [19, 852, 854, 856, 858, 860]
+    this->cardinality = 0;
 
-Level 1:   [7683896064, 11] -> [15, 19]
+    std::cout << "Data Structure: B-Skiplist " << std::endl;
 
-Level 2:   [7683896064, 15]
+}
+```
 
-
-- 可以通俗的理解为：level 1的 3个node，把level 0 的链表分割为 3+1=4个Block
-
-- level 2的 1个node，把level 1 的链表分割为 1+1=2个Block
-
-
-#### 测试参数说明 
+### 测试参数说明 
 
 - SkipList 新增构造函数 SkipList<K,V>::SkipList(int maxlevel, int k_of_thresholds, int k_of_getlevel)
 -   其中 maxlevel为最大层数  
@@ -67,7 +64,9 @@ Level 2:   [7683896064, 15]
     
             level ++;
 ```
-#### 测试结果
+
+
+### 测试结果(部分)
 
 | _max_level | key_of_thresholds | key_of_getlevel | Net throughput |
 | ---------- | ----------------- | --------------- | -------------- |
@@ -80,26 +79,3 @@ Level 2:   [7683896064, 15]
 | 8          | 2                 | 64              | 3.34           |
 | 3          | 4                 | 64              | 3.8            |
 
-参考LAskiplist的Net throughput大概为1.8
-
-#### 测试方式
-cd wiscer
-make bskiplist    #或者选择其他在makefile中的结构
-./benchmark.out workloads/test 
-
-修改bskiplist参数进行测试需要修改/wiscer/competitors/bskiplist.cpp中的构造函数
-
-```
-
-BskipList::BskipList()
-
-    : skiplist(3,4, 64)  // 分别为 maxlevel；key_of_thresholds; key_of_getlevel;
-
-{
-
-    this->cardinality = 0;
-
-    std::cout << "Data Structure: B-Skiplist " << std::endl;
-
-}
-```
