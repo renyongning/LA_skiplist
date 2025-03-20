@@ -1,4 +1,4 @@
-CC=g++ -O3 -march=native
+CC=g++ -O3 -march=native -std=c++17
 USUAL=-w -Icompetitors -o benchmark.out main.cpp
 
 chainedhash: main.cpp workload.cpp workload.h metrics.cpp metrics.h competitors/chainedhash.cpp competitors/chainedhash.h storage_engine.cpp
@@ -33,6 +33,12 @@ robustsl: main.cpp workload.cpp workload.h metrics.cpp metrics.h competitors/rob
 
 dnrobustsl: main.cpp workload.cpp workload.h metrics.cpp metrics.h competitors/dynamic_robustsl.cpp competitors/dynamic_robustsl.h storage_engine.cpp
 	$(CC) -DDNROBUSTSL $(USUAL)
+
+new: main.cpp workload.cpp workload.h metrics.cpp metrics.h competitors/bskiplist_pla.cpp competitors/bskiplist_pla.h storage_engine.cpp
+	$(CC) -DBSKIPLIST_PLA $(USUAL)
+
+new_debug:
+	g++ -g -O0 -march=native -std=c++17 -DDEBUG -DBSKIPLIST_PLA -Icompetitors -o debug main.cpp
 
 clean:
 	rm -f *.o

@@ -2,13 +2,12 @@ import subprocess
 
 # 定义数据结构列表
 data_structures = [
-    'chainedhash', 'viphash', 'stdmap', 'skiplist', 'ours',
-    'leveldb_skiplist', 'btree', 'robustsl'
+    'skiplist', 'ours', 'robustsl', 'new'
 ]
 
 # 清理之前的编译结果
 subprocess.run(['make', 'clean'], check=True)
-output_file='output2.txt'
+output_file='output.txt'
 
 with open(output_file, 'w') as f:
     pass
