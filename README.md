@@ -1,6 +1,14 @@
-**2024.09.05更新：**
+# Learning Augmented Data Structure
+![alt text](asset/image.png)
+<center>图: B-skip list</center>
 
-- 实现Sketch预测频率与Top K频率维护（*../dependency/sketch.h*与*../dependency/min_heap.h*）
+本项目在倾斜数据集、动态访问热点分布的场景下，针对现有的学习增强型跳表无法根据访问热点的动态变化进行调整、无法感知底层数据分布等问题进行优化，进一步完善了不破坏原有复杂度的插入、删除算法与自适应热点分布算法，并根据现代CPU的缓存特性对学习增强型跳表的节点进行分块化，在块结构内部引入线性模型对底层数据分布进行拟合，大幅提高了查询性能与吞吐量；此外，本项目还基于RobustSL 提出了一种具有最优动态一致性和最优鲁棒性的自适应学习增强跳表，使用牛顿冷却定律实现了实时的热点捕获，在数据访问倾斜的场景下性能显著由于普通跳表，最高可达2.13倍性能提升。
+
+----
+
+
+# History Log
+
 
 - sketch usage:
   - 若对某键key访问count次，需要将访问频率更新至sketch中：`sketch.update(key, count)`
@@ -11,37 +19,8 @@
 
   - 若需要尝试将访问频率为f（归一化）的key加入到Top K中：`topK.add(key, f)`  (add函数内部已考虑与堆顶元素的频率大小比较)
   - 若需要从Top K中获取某key的频率：`topK.getFreq(key)`
-
-  ---------------------------------------------------------------------------------------------------------------
   
 
-- 基于zyk分支8月12日的提交的版本，即没有A2算法的LAskiplist，维护了基础的b-skiplist的Block结构
-- 参考的论文是The B-Skip-List: A Simpler Uniquely Represented Alternative to B-Trees （Write-Optimized Skip Lists中所用的Bskiplist结构是考虑了write缓冲区的Bskiplist，我们实现的是暂时没有考虑上缓冲区的bskiplist，参考论文为Write-Optimized的一篇引用论文）
-- 划分block的逻辑为 第`i`层的`x`个node,会把第`i-1`层的链表划分为`x+1`个Block
-- bulkload中实现了构造初始的Block,思路与函数中node的构建类似
-- insert函数中,如果insert到不为0的level也会进一步划分Block,同时把该node加入到对应Block
-
-- 数据结构为:
-- Node中新增`Block <K,V> ** forward_blocks;`forward_blocks[0]代表第一层中由该node打头的Block,以此类推,范围为 0 ~ node_level-2,即不包含本层的Block信息
-
-- Block结构为
-
-template<typename K,typename V>
-
-class Block
-
-{
-
-    std::vector<Node<K,V> *> nodes; //当前Block包含的node
-    
-    Block *next; // 指向当前level的下一个Block
-    
-    int block_level;//block所在的层次
-
-}
-
-- 为了方便与最新的更新匹配,保留了所有的原本的Node结构,所以空间还能再优化
-- Search还是原本的逻辑(node之间通过指针指来指去),所以现在还没有体现出分块的优势,Block中通过vector存储node,所以改为通过Block进行search可能会更快
 - 结构示意图
 
 *****SkipList*****
@@ -65,16 +44,13 @@ Level 2:   [7683896064, 15]
 
 - level 2的 1个node，把level 1 的链表分割为 1+1=2个Block
 
-## 10-21 更新
-
-- 在维护了block数据结构的基础上,实现了search insert remove(delete_element)操作,插入删除都不涉及进一步维护概率.
 
 #### 测试参数说明 
 
 - SkipList 新增构造函数 SkipList<K,V>::SkipList(int maxlevel, int k_of_thresholds, int k_of_getlevel)
 -   其中 maxlevel为最大层数  
 -   k_of_thresholds,用在bulkload中初始化数组 key_of_thresholds,控制因为出现概率而提升level的节点的阈值
-    
+```
     for (int i = 0; i <= _max_level; i ++)
     
     {
@@ -84,13 +60,13 @@ Level 2:   [7683896064, 15]
         p_thresholds.push_back(p_threshold);
 
     }
-
+```
 -   k_of_getlevel用于get_random_level中,可以一定程度上控制block的大小,key_of_getlevel越大,节点向上提升level的概率越低
-    
+```
     if (p >= p_thresholds[level + 1] || !(std::rand() % key_of_getlevel) )
     
             level ++;
-
+```
 #### 测试结果
 
 | _max_level | key_of_thresholds | key_of_getlevel | Net throughput |
@@ -101,8 +77,8 @@ Level 2:   [7683896064, 15]
 | 32         | 2                 | 16              | 1.85           |
 | 32         | 1                 | 32              | 2.0            |
 | 32         | 1                 | 64              | 1.95           |
-| 8         | 2                 | 64              | 3.34            |
-| 3         | 4                 | 64              | 3.8           |
+| 8          | 2                 | 64              | 3.34           |
+| 3          | 4                 | 64              | 3.8            |
 
 参考LAskiplist的Net throughput大概为1.8
 
