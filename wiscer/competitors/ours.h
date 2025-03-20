@@ -12,17 +12,24 @@
 #include "../metrics.h"
 #include "../../SkipList/LA_skiplist.h"
 //#include "../dependency/LA_skiplist.h"
+#include "../dependency/sketch.h"
+#include "../dependency/min_heap.h"
 #include<unordered_map>
+#include <queue>
 extern std::unordered_map<ulong, ulong> accessCounter; 
 extern ulong totalAccess; 
 extern std::vector<std::unordered_map<ulong, double>> probs;
 extern std::vector<ulong> changeTimes; 
 extern std::vector<std::vector<std::pair<ulong, double>>> sortedProbs;
+
 using namespace std;
 
 #define FETCH_REQ 0
 #define INSERT_REQ 1
 #define DELETE_REQ 2
+
+#define eps 0.1 // parameters for sketch
+#define gamma 0.01
 
 typedef struct HashmapReq {
     ulong key;
@@ -38,6 +45,10 @@ private:
     ulong displacement;
     struct timespec startTime, endTime;
     SkipList<ulong, ulong> skiplist;
+    int phase = 0;
+
+    CountMinSketch sketch;
+    minHeap topK;
    
 public:
     LAskiplist();
