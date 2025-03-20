@@ -11,7 +11,7 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include "../metrics.h"
-#include "../dependency/DynamicRobustSL.h"
+#include "../dependency/NeoDynamicRobustSL3.h"
 #include <unordered_map>
 #include <vector>
 #include <algorithm>
@@ -52,7 +52,6 @@ public:
     void show()
     {
         skiplist.display_list();
-        skiplist.traverse_cll();
     }
 
     // helper functions
